@@ -16,6 +16,9 @@
     --lav:#b6a4ff;
     --pink:#ffabd8;
     --mint:#8ff0e0;
+    --lav-rgb:182,164,255;
+    --pink-rgb:255,171,216;
+    --mint-rgb:143,240,224;
     --text:#f2eefb;
     --muted:#968ebb;
     --radius: 18px;
@@ -36,9 +39,9 @@
   .ambient-bg{
     position:fixed; inset:0; z-index:0; pointer-events:none;
     background:
-      radial-gradient(600px 420px at 12% 8%, rgba(182,164,255,0.16), transparent 60%),
-      radial-gradient(560px 420px at 88% 18%, rgba(255,171,216,0.12), transparent 60%),
-      radial-gradient(700px 500px at 50% 100%, rgba(143,240,224,0.08), transparent 60%),
+      radial-gradient(600px 420px at 12% 8%, rgba(var(--lav-rgb),0.16), transparent 60%),
+      radial-gradient(560px 420px at 88% 18%, rgba(var(--pink-rgb),0.12), transparent 60%),
+      radial-gradient(700px 500px at 50% 100%, rgba(var(--mint-rgb),0.08), transparent 60%),
       linear-gradient(180deg, var(--bg-0), var(--bg-1));
     animation: drift 22s ease-in-out infinite alternate;
   }
@@ -91,7 +94,7 @@
     height:220px;
     border-radius:14px;
     overflow:hidden;
-    background: radial-gradient(ellipse at center, rgba(182,164,255,0.06), rgba(0,0,0,0.25));
+    background: radial-gradient(ellipse at center, rgba(var(--lav-rgb),0.06), rgba(0,0,0,0.25));
     margin-bottom:18px;
   }
   #viz{ width:100%; height:100%; display:block; }
@@ -123,12 +126,12 @@
     -webkit-appearance:none; appearance:none;
     width:13px; height:13px; border-radius:50%;
     background: var(--text);
-    box-shadow: 0 0 10px rgba(182,164,255,0.7);
+    box-shadow: 0 0 10px rgba(var(--lav-rgb),0.7);
     cursor:pointer; margin-top:-4.5px;
   }
   input[type="range"]::-moz-range-thumb{
     width:13px; height:13px; border-radius:50%; border:none;
-    background: var(--text); box-shadow: 0 0 10px rgba(182,164,255,0.7); cursor:pointer;
+    background: var(--text); box-shadow: 0 0 10px rgba(var(--lav-rgb),0.7); cursor:pointer;
   }
 
   .controls{
@@ -163,8 +166,8 @@
   }
   .studio-btn:hover{ background: rgba(255,255,255,0.12); }
   .studio-btn.active{
-    background: linear-gradient(120deg, rgba(182,164,255,0.28), rgba(255,171,216,0.22));
-    border-color: rgba(182,164,255,0.4);
+    background: linear-gradient(120deg, rgba(var(--lav-rgb),0.28), rgba(var(--pink-rgb),0.22));
+    border-color: rgba(var(--lav-rgb),0.4);
   }
 
   /* ---- studio / FX panel ---- */
@@ -221,6 +224,62 @@
   }
   .reset-btn:hover{ color:var(--text); border-color: var(--lav); }
 
+  .sleep-options{ display:flex; gap:7px; flex-wrap:wrap; margin-bottom:10px; }
+  .sleep-options button{
+    font-family:'Space Grotesk', sans-serif; font-size:0.75rem;
+    background: rgba(255,255,255,0.05); border:1px solid var(--panel-border); color: var(--muted);
+    padding:6px 12px; border-radius:999px; cursor:pointer; transition: all .15s;
+  }
+  .sleep-options button:hover{ color:var(--text); background:rgba(255,255,255,0.1); }
+  .sleep-options button.active{
+    color:var(--bg-0); background: linear-gradient(120deg, var(--lav), var(--mint));
+    border-color:transparent;
+  }
+
+  /* toggle switch */
+  .switch{ position:relative; display:inline-block; width:38px; height:21px; flex-shrink:0; }
+  .switch input{ opacity:0; width:0; height:0; }
+  .switch-track{
+    position:absolute; inset:0; background: rgba(255,255,255,0.12);
+    border:1px solid var(--panel-border); border-radius:999px; cursor:pointer; transition: background .2s;
+  }
+  .switch-track::before{
+    content:''; position:absolute; width:15px; height:15px; left:2px; top:2px;
+    background: var(--text); border-radius:50%; transition: transform .2s;
+  }
+  .switch input:checked + .switch-track{ background: linear-gradient(120deg, var(--lav), var(--pink)); }
+  .switch input:checked + .switch-track::before{ transform: translateX(17px); }
+
+  /* theme swatches */
+  .theme-swatches{ display:flex; gap:10px; flex-wrap:wrap; }
+  .theme-swatches button{
+    width:34px; height:34px; border-radius:50%; cursor:pointer;
+    border:2px solid transparent;
+    background: conic-gradient(from 0deg, var(--sw1), var(--sw2), var(--sw3), var(--sw1));
+    transition: transform .15s, border-color .15s;
+  }
+  .theme-swatches button:hover{ transform: scale(1.08); }
+  .theme-swatches button.active{ border-color: var(--text); transform: scale(1.1); }
+
+  /* ---- easter eggs ---- */
+  .egg-toast{
+    position:fixed; left:50%; bottom:30px; transform:translate(-50%,16px);
+    background: rgba(20,16,34,0.88); border:1px solid var(--panel-border);
+    color:var(--text); padding:11px 22px; border-radius:999px;
+    font-family:'Space Grotesk', sans-serif; font-size:0.82rem;
+    opacity:0; pointer-events:none; transition: opacity .35s ease, transform .35s ease;
+    z-index:50; backdrop-filter: blur(12px);
+    box-shadow: 0 0 34px rgba(var(--lav-rgb),0.28);
+  }
+  .egg-toast.show{ opacity:1; transform:translate(-50%,0); }
+
+  .ambient-bg.pulse{ animation: hazePulse 1.5s ease; }
+  @keyframes hazePulse{
+    0%{ filter:brightness(1) saturate(1); }
+    35%{ filter:brightness(1.6) saturate(1.5); }
+    100%{ filter:brightness(1) saturate(1); }
+  }
+
   /* ---- playlist panel ---- */
   .playlist-header{
     display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;
@@ -256,7 +315,7 @@
   }
   .drop-zone.dragover{
     border-color: var(--lav);
-    background: rgba(182,164,255,0.06);
+    background: rgba(var(--lav-rgb),0.06);
     color: var(--text);
   }
 
@@ -271,7 +330,7 @@
     transition: background .12s;
   }
   #playlist li:hover{ background: rgba(255,255,255,0.05); }
-  #playlist li.playing{ background: rgba(182,164,255,0.1); color: var(--lav); }
+  #playlist li.playing{ background: rgba(var(--lav-rgb),0.1); color: var(--lav); }
   #playlist li .idx{ color:var(--muted); font-size:0.75rem; width:18px; flex-shrink:0; }
   #playlist li .meta{ flex:1; min-width:0; }
   #playlist li .meta .t-name{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -294,7 +353,7 @@
 
 <div class="app">
   <header>
-    <h1>Haze</h1>
+    <h1 id="logoTitle">Haze</h1>
     <p>your files · your air · no cloud</p>
   </header>
 
@@ -407,8 +466,40 @@
       </div>
 
       <div class="fx-block">
+        <span class="fx-label">Crossfade</span>
+        <div class="fx-row"><label>Enable</label>
+          <label class="switch"><input type="checkbox" id="crossfadeToggle"><span class="switch-track"></span></label>
+        </div>
+        <div class="fx-row"><label>Length</label><input type="range" id="crossfadeLen" min="1" max="10" step="0.5" value="4"><span class="fx-val" id="crossfadeLenVal">4.0s</span></div>
+        <p class="fx-note">audio tracks only, not video</p>
+      </div>
+
+      <div class="fx-block">
+        <span class="fx-label">Color Theme</span>
+        <div class="theme-swatches" id="themeSwatches">
+          <button data-theme="dreampop" class="active" title="Dream Pop" style="--sw1:#b6a4ff;--sw2:#ffabd8;--sw3:#8ff0e0;"></button>
+          <button data-theme="midnight" title="Midnight Neon" style="--sw1:#6ee7ff;--sw2:#a78bfa;--sw3:#f472b6;"></button>
+          <button data-theme="sakura" title="Sakura" style="--sw1:#ffb7c5;--sw2:#ffd9a0;--sw3:#c9a7ff;"></button>
+          <button data-theme="solar" title="Solar Flare" style="--sw1:#ffb454;--sw2:#ff6b6b;--sw3:#ffe27a;"></button>
+          <button data-theme="mono" title="Mono" style="--sw1:#e8e8f0;--sw2:#b8b8c8;--sw3:#9090a8;"></button>
+        </div>
+      </div>
+
+      <div class="fx-block">
         <span class="fx-label">Stereo Width</span>
         <div class="fx-row"><label>Width</label><input type="range" id="stereoWidth" min="0" max="200" value="100"><span class="fx-val" id="stereoWidthVal">100%</span></div>
+      </div>
+
+      <div class="fx-block">
+        <span class="fx-label">Sleep Timer</span>
+        <div class="sleep-options" id="sleepOptions">
+          <button data-mins="15">15m</button>
+          <button data-mins="30">30m</button>
+          <button data-mins="45">45m</button>
+          <button data-mins="60">60m</button>
+          <button data-mins="0" class="sleep-off active">Off</button>
+        </div>
+        <p class="fx-note" id="sleepStatus">no timer set</p>
       </div>
 
       <div class="fx-block">
@@ -424,11 +515,13 @@
 </div>
 
 <audio id="audioEl"></audio>
+<audio id="audioEl2"></audio>
 <input type="file" id="fileInput" accept="audio/*,video/mp4,video/*" multiple style="display:none">
 
 <script>
 (function(){
   const audioEl = document.getElementById('audioEl');
+  const audioEl2 = document.getElementById('audioEl2');
   const videoEl = document.getElementById('videoEl');
   const canvas = document.getElementById('viz');
   const ctx = canvas.getContext('2d');
@@ -458,14 +551,22 @@
   let shuffleOrder = [];
   let repeatMode = 0;      // 0 off, 1 all, 2 one
   let activeEl = audioEl;
+  let activeAudioDeck = audioEl;   // whichever of audioEl / audioEl2 is currently "live"
+  let crossfadeEnabled = false;
+  let crossfadeDuration = 4;       // seconds
+  let crossfadeInProgress = false;
 
   const ICON_PLAY = '<polygon points="6 3 20 12 6 21 6 3"></polygon>';
   const ICON_PAUSE = '<rect x="5" y="3" width="5" height="18"></rect><rect x="14" y="3" width="5" height="18"></rect>';
 
-  // ---------- Web Audio graph: source -> EQ -> (dry + echo-send + reverb-send) -> master -> analyser -> out ----------
-  let audioCtx, analyser, freqData, srcAudio, srcVideo, connectedAudio=false, connectedVideo=false;
+  // ---------- Web Audio graph: source -> trackGain(per deck) -> EQ -> (dry + echo-send + reverb-send) -> master -> analyser -> out ----------
+  let audioCtx, analyser, freqData, srcAudio, srcAudio2, srcVideo, connectedAudio=false, connectedAudio2=false, connectedVideo=false;
   let inputGain, eqBands, masterGain, delayNode, feedbackGain, echoWet, convolver, reverbWet, widthGain;
+  let trackGainA, trackGainB;
   let currentReverbSize = 'medium';
+  let themeRGB = { c1:'182,164,255', c2:'255,171,216', c3:'143,240,224' };
+
+  function isAudioDeck(el){ return el === audioEl || el === audioEl2; }
 
   function dBToLinear(dB){ return Math.pow(10, dB/20); }
 
@@ -494,6 +595,10 @@
       freqData = new Uint8Array(analyser.frequencyBinCount);
 
       inputGain = audioCtx.createGain();
+      trackGainA = audioCtx.createGain(); trackGainA.gain.value = 1;
+      trackGainB = audioCtx.createGain(); trackGainB.gain.value = 0;
+      trackGainA.connect(inputGain);
+      trackGainB.connect(inputGain);
 
       const specs = [
         { type:'lowshelf',  freq:60 },
@@ -564,8 +669,13 @@
     }
     if(!connectedAudio){
       srcAudio = audioCtx.createMediaElementSource(audioEl);
-      srcAudio.connect(inputGain);
+      srcAudio.connect(trackGainA);
       connectedAudio = true;
+    }
+    if(!connectedAudio2){
+      srcAudio2 = audioCtx.createMediaElementSource(audioEl2);
+      srcAudio2.connect(trackGainB);
+      connectedAudio2 = true;
     }
     if(!connectedVideo){
       srcVideo = audioCtx.createMediaElementSource(videoEl);
@@ -621,7 +731,7 @@
     addFiles(e.dataTransfer.files);
   });
   clearBtn.addEventListener('click', () => {
-    audioEl.pause(); videoEl.pause();
+    audioEl.pause(); audioEl2.pause(); videoEl.pause();
     playlist.forEach(t => URL.revokeObjectURL(t.url));
     playlist = []; currentIndex = -1;
     trackTitle.textContent = 'Nothing loaded yet';
@@ -664,7 +774,7 @@
     URL.revokeObjectURL(playlist[i].url);
     playlist.splice(i,1);
     if(i === currentIndex){
-      audioEl.pause(); videoEl.pause(); setPlayingUI(false);
+      audioEl.pause(); audioEl2.pause(); videoEl.pause(); setPlayingUI(false);
       currentIndex = -1;
       if(playlist.length) loadTrack(Math.min(i, playlist.length-1), true);
       else { trackTitle.textContent='Nothing loaded yet'; trackArtist.textContent='Add files on the right to begin'; }
@@ -677,12 +787,23 @@
   // ---------- playback ----------
   function loadTrack(i, autoplay){
     if(i < 0 || i >= playlist.length) return;
-    currentIndex = i;
     const t = playlist[i];
+    const prevIndex = currentIndex;
+    const prevTrackObj = prevIndex !== -1 ? playlist[prevIndex] : null;
+
+    const canCrossfade = crossfadeEnabled && !crossfadeInProgress && prevIndex !== -1 && prevIndex !== i &&
+                          prevTrackObj && !prevTrackObj.isVideo && !t.isVideo &&
+                          activeEl && isAudioDeck(activeEl) && !activeEl.paused && autoplay !== false;
+    if(canCrossfade){
+      startCrossfade(i);
+      return;
+    }
+
+    currentIndex = i;
     ensureAudioGraph();
     if(audioCtx.state === 'suspended') audioCtx.resume();
 
-    audioEl.pause(); videoEl.pause();
+    audioEl.pause(); audioEl2.pause(); videoEl.pause();
     if(t.isVideo){
       videoEl.style.display = 'block';
       canvas.style.display = 'none';
@@ -693,12 +814,15 @@
       canvas.style.display = 'block';
       audioEl.src = t.url;
       activeEl = audioEl;
+      activeAudioDeck = audioEl;
+      trackGainA.gain.value = 1;
+      trackGainB.gain.value = 0;
     }
     trackTitle.textContent = t.name;
     trackArtist.textContent = t.artist || (t.isVideo ? 'video file' : 'audio file');
 
     activeEl.currentTime = 0;
-    if(typeof updatePlaybackRate === 'function') updatePlaybackRate();
+    updatePlaybackRate();
     activeEl.onloadedmetadata = () => {
       t.duration = activeEl.duration;
       durTimeEl.textContent = fmtTime(activeEl.duration);
@@ -708,6 +832,83 @@
       activeEl.play().then(()=>setPlayingUI(true)).catch(()=>setPlayingUI(false));
     }
     renderPlaylist();
+  }
+
+  // returns the index nextTrack() would move to, or null if playback would stop — used
+  // both by the actual "next" action and by the crossfade look-ahead, without side effects
+  function resolveNextIndex(){
+    if(!playlist.length) return null;
+    if(shuffleOn){
+      const pos = shuffleOrder.indexOf(currentIndex);
+      if(pos === shuffleOrder.length-1 && repeatMode === 0) return null;
+      return shuffleOrder[(pos+1) % shuffleOrder.length];
+    }
+    let ni = currentIndex + 1;
+    if(ni >= playlist.length){
+      if(repeatMode === 1) return 0;
+      return null;
+    }
+    return ni;
+  }
+
+  function startCrossfade(ni){
+    crossfadeInProgress = true;
+    ensureAudioGraph();
+    const t = playlist[ni];
+    const outgoingDeck = activeAudioDeck;
+    const outgoingGain = (outgoingDeck === audioEl) ? trackGainA : trackGainB;
+    const incomingDeck = (outgoingDeck === audioEl) ? audioEl2 : audioEl;
+    const incomingGain = (incomingDeck === audioEl) ? trackGainA : trackGainB;
+
+    incomingDeck.src = t.url;
+    incomingDeck.currentTime = 0;
+    incomingDeck.volume = parseFloat(volume.value);
+    incomingDeck.playbackRate = parseFloat(playRateSlider.value) / 100;
+    incomingGain.gain.cancelScheduledValues(audioCtx.currentTime);
+    incomingGain.gain.setValueAtTime(0, audioCtx.currentTime);
+    incomingDeck.onloadedmetadata = () => {
+      t.duration = incomingDeck.duration;
+      renderPlaylist();
+    };
+
+    incomingDeck.play().then(() => {
+      const now = audioCtx.currentTime;
+      const dur = crossfadeDuration;
+      outgoingGain.gain.cancelScheduledValues(now);
+      outgoingGain.gain.setValueAtTime(outgoingGain.gain.value, now);
+      outgoingGain.gain.linearRampToValueAtTime(0, now + dur);
+      incomingGain.gain.cancelScheduledValues(now);
+      incomingGain.gain.setValueAtTime(0, now);
+      incomingGain.gain.linearRampToValueAtTime(1, now + dur);
+
+      currentIndex = ni;
+      trackTitle.textContent = t.name;
+      trackArtist.textContent = t.artist || 'audio file';
+      durTimeEl.textContent = t.duration ? fmtTime(t.duration) : '0:00';
+      activeAudioDeck = incomingDeck;
+      activeEl = incomingDeck;
+      renderPlaylist();
+
+      setTimeout(() => {
+        outgoingDeck.pause();
+        outgoingDeck.currentTime = 0;
+        crossfadeInProgress = false;
+      }, dur*1000 + 80);
+    }).catch(() => { crossfadeInProgress = false; });
+  }
+
+  function maybeStartCrossfade(deckEl){
+    if(!crossfadeEnabled || crossfadeInProgress) return;
+    if(deckEl !== activeEl) return;
+    if(!deckEl.duration || !isFinite(deckEl.duration)) return;
+    if(repeatMode === 2) return; // let single-track repeat loop naturally instead
+    const remaining = deckEl.duration - deckEl.currentTime;
+    if(remaining > crossfadeDuration || remaining <= 0) return;
+    const ni = resolveNextIndex();
+    if(ni === null) return;
+    const nt = playlist[ni];
+    if(!nt || nt.isVideo) return; // crossfade only supports audio-to-audio
+    startCrossfade(ni);
   }
 
   function setPlayingUI(playing){
@@ -752,18 +953,8 @@
   function nextTrack(auto){
     if(!playlist.length) return;
     if(repeatMode === 2 && auto){ loadTrack(currentIndex); return; }
-    let ni;
-    if(shuffleOn){
-      const pos = shuffleOrder.indexOf(currentIndex);
-      ni = shuffleOrder[(pos+1) % shuffleOrder.length];
-      if(pos === shuffleOrder.length-1 && repeatMode === 0 && auto) { setPlayingUI(false); return; }
-    } else {
-      ni = currentIndex + 1;
-      if(ni >= playlist.length){
-        if(repeatMode === 1) ni = 0;
-        else { setPlayingUI(false); return; }
-      }
-    }
+    const ni = resolveNextIndex();
+    if(ni === null){ setPlayingUI(false); return; }
     loadTrack(ni);
   }
   function prevTrack(){
@@ -781,12 +972,13 @@
   nextBtn.addEventListener('click', () => nextTrack(false));
   prevBtn.addEventListener('click', prevTrack);
 
-  [audioEl, videoEl].forEach(el => {
-    el.addEventListener('ended', () => nextTrack(true));
+  [audioEl, audioEl2, videoEl].forEach(el => {
+    el.addEventListener('ended', () => { if(el === activeEl) nextTrack(true); });
     el.addEventListener('timeupdate', () => {
       if(el !== activeEl) return;
       curTimeEl.textContent = fmtTime(el.currentTime);
       if(el.duration) seek.value = (el.currentTime / el.duration) * 100;
+      if(isAudioDeck(el)) maybeStartCrossfade(el);
     });
   });
 
@@ -796,16 +988,36 @@
   });
   volume.addEventListener('input', () => {
     audioEl.volume = volume.value;
+    audioEl2.volume = volume.value;
     videoEl.volume = volume.value;
   });
-  audioEl.volume = 0.8; videoEl.volume = 0.8;
+  audioEl.volume = 0.8; audioEl2.volume = 0.8; videoEl.volume = 0.8;
 
   document.addEventListener('keydown', e => {
-    if(e.target.tagName === 'INPUT') return;
-    if(e.code === 'Space'){ e.preventDefault(); togglePlay(); }
-    if(e.code === 'ArrowRight'){ nextTrack(false); }
-    if(e.code === 'ArrowLeft'){ prevTrack(); }
+    const typing = e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA';
+    if(!typing){
+      if(e.code === 'Space'){ e.preventDefault(); togglePlay(); }
+      if(e.code === 'ArrowRight'){ nextTrack(false); }
+      if(e.code === 'ArrowLeft'){ prevTrack(); }
+      checkKonami(e.code);
+      checkWordBuffer(e.key);
+    }
   });
+
+  // ---------- toast (used by easter eggs & sleep timer) ----------
+  function showToast(msg){
+    let toast = document.getElementById('eggToast');
+    if(!toast){
+      toast = document.createElement('div');
+      toast.id = 'eggToast';
+      toast.className = 'egg-toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => toast.classList.remove('show'), 2800);
+  }
 
   // ---------- Studio / FX controls ----------
   const fxToggle = document.getElementById('fxToggle');
@@ -824,7 +1036,8 @@
   const preampSlider = document.getElementById('preamp');
   const stereoWidthSlider = document.getElementById('stereoWidth');
   const playRateSlider = document.getElementById('playRate');
-  const presetButtons = Array.from(document.querySelectorAll('#presets button'));
+  const crossfadeToggle = document.getElementById('crossfadeToggle');
+  const crossfadeLenSlider = document.getElementById('crossfadeLen');
   const fxReset = document.getElementById('fxReset');
 
   const PRESETS = {
@@ -848,6 +1061,7 @@
   function updatePlaybackRate(){
     const rate = playRateSlider.value / 100;
     audioEl.playbackRate = rate;
+    audioEl2.playbackRate = rate;
     videoEl.playbackRate = rate;
   }
 
@@ -880,38 +1094,224 @@
   allFxControls.forEach(c => c.addEventListener('input', () => {
     updateValueLabels();
     updateFXFromUI();
-    presetButtons.forEach(b => b.classList.remove('active'));
+    clearPresetActive();
   }));
   reverbSizeSelect.addEventListener('change', () => {
     updateFXFromUI();
-    presetButtons.forEach(b => b.classList.remove('active'));
+    clearPresetActive();
   });
 
   // width & speed are independent playback axes — they don't disturb the tone presets
   stereoWidthSlider.addEventListener('input', () => { updateValueLabels(); updateFXFromUI(); });
   playRateSlider.addEventListener('input', () => { updateValueLabels(); updatePlaybackRate(); });
 
-  presetButtons.forEach(btn => btn.addEventListener('click', () => {
-    setSliderValues(PRESETS[btn.dataset.preset]);
+  crossfadeToggle.addEventListener('change', () => { crossfadeEnabled = crossfadeToggle.checked; });
+  crossfadeLenSlider.addEventListener('input', () => {
+    crossfadeDuration = parseFloat(crossfadeLenSlider.value);
+    document.getElementById('crossfadeLenVal').textContent = crossfadeDuration.toFixed(1) + 's';
+  });
+
+  // ---------- color themes ----------
+  function hexToRgb(hex){
+    const v = hex.replace('#','');
+    return `${parseInt(v.substring(0,2),16)},${parseInt(v.substring(2,4),16)},${parseInt(v.substring(4,6),16)}`;
+  }
+  const THEMES = {
+    dreampop: { bg0:'#0f0d1a', bg1:'#161228', text:'#f2eefb', muted:'#968ebb', lav:'#b6a4ff', pink:'#ffabd8', mint:'#8ff0e0' },
+    midnight: { bg0:'#080b14', bg1:'#0f1626', text:'#e8f4ff', muted:'#7a8bab', lav:'#6ee7ff', pink:'#a78bfa', mint:'#f472b6' },
+    sakura:   { bg0:'#180f14', bg1:'#241521', text:'#fff0f5', muted:'#b892a0', lav:'#ffb7c5', pink:'#ffd9a0', mint:'#c9a7ff' },
+    solar:    { bg0:'#180f08', bg1:'#251508', text:'#fff4e6', muted:'#b8916a', lav:'#ffb454', pink:'#ff6b6b', mint:'#ffe27a' },
+    mono:     { bg0:'#0c0c10', bg1:'#141418', text:'#f0f0f4', muted:'#8a8a96', lav:'#e8e8f0', pink:'#b8b8c8', mint:'#9090a8' }
+  };
+  function applyTheme(key){
+    const t = THEMES[key] || THEMES.dreampop;
+    const root = document.documentElement.style;
+    root.setProperty('--bg-0', t.bg0);
+    root.setProperty('--bg-1', t.bg1);
+    root.setProperty('--text', t.text);
+    root.setProperty('--muted', t.muted);
+    root.setProperty('--lav', t.lav);
+    root.setProperty('--pink', t.pink);
+    root.setProperty('--mint', t.mint);
+    root.setProperty('--lav-rgb', hexToRgb(t.lav));
+    root.setProperty('--pink-rgb', hexToRgb(t.pink));
+    root.setProperty('--mint-rgb', hexToRgb(t.mint));
+    themeRGB = { c1: hexToRgb(t.lav), c2: hexToRgb(t.pink), c3: hexToRgb(t.mint) };
+    Array.from(document.querySelectorAll('#themeSwatches button')).forEach(b => b.classList.toggle('active', b.dataset.theme === key));
+  }
+  document.getElementById('themeSwatches').addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if(!btn) return;
+    applyTheme(btn.dataset.theme);
+  });
+  applyTheme('dreampop');
+
+  const presetsRow = document.getElementById('presets');
+  function clearPresetActive(){
+    Array.from(presetsRow.querySelectorAll('button')).forEach(b => b.classList.remove('active'));
+  }
+  function applyPreset(p){
+    setSliderValues(p);
+    if(typeof p.rate === 'number'){ playRateSlider.value = p.rate; updatePlaybackRate(); }
+    if(typeof p.width === 'number'){ stereoWidthSlider.value = p.width; }
     updateValueLabels();
     updateFXFromUI();
-    presetButtons.forEach(b => b.classList.remove('active'));
+  }
+  // delegated so secret presets unlocked later still work without extra wiring
+  presetsRow.addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if(!btn || !PRESETS[btn.dataset.preset]) return;
+    applyPreset(PRESETS[btn.dataset.preset]);
+    clearPresetActive();
     btn.classList.add('active');
-  }));
+  });
 
   fxReset.addEventListener('click', () => {
-    setSliderValues(PRESETS.flat);
+    applyPreset(PRESETS.flat);
     stereoWidthSlider.value = 100;
     playRateSlider.value = 100;
+    crossfadeToggle.checked = false;
+    crossfadeEnabled = false;
+    crossfadeLenSlider.value = 4;
+    crossfadeDuration = 4;
+    document.getElementById('crossfadeLenVal').textContent = '4.0s';
     updateValueLabels();
     updateFXFromUI();
     updatePlaybackRate();
-    presetButtons.forEach(b => b.classList.remove('active'));
+    clearPresetActive();
     document.querySelector('[data-preset="flat"]').classList.add('active');
   });
 
   updateValueLabels();
   document.querySelector('[data-preset="flat"]').classList.add('active');
+
+  // ---------- sleep timer ----------
+  let sleepEnd = null, sleepInterval = null, preSleepVolume = null;
+  const sleepButtons = Array.from(document.querySelectorAll('#sleepOptions button'));
+  const sleepStatus = document.getElementById('sleepStatus');
+
+  function clearSleepInterval(){ if(sleepInterval){ clearInterval(sleepInterval); sleepInterval = null; } }
+
+  function restoreVolumeIfFaded(){
+    if(preSleepVolume !== null){
+      audioEl.volume = preSleepVolume; audioEl2.volume = preSleepVolume; videoEl.volume = preSleepVolume;
+      volume.value = preSleepVolume;
+      preSleepVolume = null;
+    }
+  }
+
+  function tickSleepTimer(){
+    if(!sleepEnd) return;
+    const remaining = sleepEnd - Date.now();
+    if(remaining <= 0){
+      sleepStatus.textContent = 'lights out';
+      activeEl.pause();
+      setPlayingUI(false);
+      restoreVolumeIfFaded();
+      clearSleepInterval();
+      sleepEnd = null;
+      sleepButtons.forEach(b => b.classList.remove('active'));
+      document.querySelector('.sleep-off').classList.add('active');
+      return;
+    }
+    const mm = Math.floor(remaining/60000);
+    const ss = Math.floor((remaining%60000)/1000).toString().padStart(2,'0');
+    sleepStatus.textContent = mm + ':' + ss + ' left';
+    const fadeWindow = 20000;
+    if(remaining <= fadeWindow){
+      if(preSleepVolume === null) preSleepVolume = parseFloat(volume.value);
+      const v = preSleepVolume * Math.max(0, remaining/fadeWindow);
+      audioEl.volume = v; audioEl2.volume = v; videoEl.volume = v;
+    }
+  }
+
+  sleepButtons.forEach(btn => btn.addEventListener('click', () => {
+    const mins = parseInt(btn.dataset.mins, 10);
+    sleepButtons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    clearSleepInterval();
+    restoreVolumeIfFaded();
+    if(mins === 0){
+      sleepEnd = null;
+      sleepStatus.textContent = 'no timer set';
+    } else {
+      sleepEnd = Date.now() + mins*60000;
+      sleepInterval = setInterval(tickSleepTimer, 1000);
+      tickSleepTimer();
+    }
+  }));
+
+  // ---------- easter eggs ----------
+  const KONAMI = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','KeyB','KeyA'];
+  let konamiProgress = 0;
+  function checkKonami(code){
+    if(code === KONAMI[konamiProgress]){
+      konamiProgress++;
+      if(konamiProgress === KONAMI.length){ triggerSupernova(); konamiProgress = 0; }
+    } else {
+      konamiProgress = (code === KONAMI[0]) ? 1 : 0;
+    }
+  }
+
+  let wordBuffer = '';
+  function checkWordBuffer(key){
+    if(key.length === 1){
+      wordBuffer = (wordBuffer + key).slice(-10).toLowerCase();
+      if(wordBuffer.endsWith('haze')){
+        triggerHazeRipple();
+        wordBuffer = '';
+      }
+    }
+  }
+
+  function triggerHazeRipple(){
+    showToast('🌫️ the haze remembers');
+    const bg = document.querySelector('.ambient-bg');
+    bg.classList.remove('pulse'); void bg.offsetWidth; bg.classList.add('pulse');
+  }
+
+  let supernovaActive = false, supernovaTimeout = null;
+  let burstParticles = [];
+  function triggerSupernova(){
+    showToast('✨ supernova — Konami mode engaged');
+    supernovaActive = true;
+    const cx = canvas.width/2, cy = canvas.height/2;
+    for(let i=0;i<55;i++){
+      const angle = Math.random()*Math.PI*2;
+      const speed = 2 + Math.random()*6;
+      burstParticles.push({
+        x:cx, y:cy, vx:Math.cos(angle)*speed, vy:Math.sin(angle)*speed,
+        r:3+Math.random()*6, life:1, hue:Math.random()
+      });
+    }
+    clearTimeout(supernovaTimeout);
+    supernovaTimeout = setTimeout(() => { supernovaActive = false; }, 6000);
+  }
+
+  let logoClicks = 0, logoClickTimer = null;
+  document.getElementById('logoTitle').addEventListener('click', () => {
+    logoClicks++;
+    clearTimeout(logoClickTimer);
+    logoClickTimer = setTimeout(() => { logoClicks = 0; }, 1500);
+    if(logoClicks === 7){
+      unlockSecretPresets();
+      logoClicks = 0;
+    }
+  });
+
+  function unlockSecretPresets(){
+    if(PRESETS.vaporwave) return;
+    PRESETS.vaporwave = { eq:[6,2,-2,-3,-4], echoMix:15, echoTime:340, echoFeedback:42, reverbMix:55, reverbSize:'long',  preamp:-2, rate:80,  width:130 };
+    PRESETS.nightcore  = { eq:[-2,0,3,6,7],  echoMix:5,  echoTime:120, echoFeedback:15, reverbMix:10, reverbSize:'short', preamp:-1, rate:130, width:110 };
+    ['vaporwave','nightcore'].forEach(key => {
+      const btn = document.createElement('button');
+      btn.dataset.preset = key;
+      btn.textContent = key === 'vaporwave' ? 'Vaporwave' : 'Nightcore';
+      presetsRow.appendChild(btn);
+    });
+    showToast('🔓 secret presets unlocked: Vaporwave & Nightcore');
+    if(!fxPanel.classList.contains('open')){ fxPanel.classList.add('open'); fxToggle.classList.add('active'); }
+  }
 
   // ---------- visualizer ----------
   let particles = [];
@@ -947,7 +1347,7 @@
     const w = canvas.width, h = canvas.height;
     let bass=0, mid=0, treble=0;
 
-    if(analyser && activeEl === audioEl){
+    if(analyser && isAudioDeck(activeEl)){
       analyser.getByteFrequencyData(freqData);
       const n = freqData.length;
       const b1 = Math.floor(n*0.1), b2 = Math.floor(n*0.5);
@@ -963,8 +1363,8 @@
     const cx = w/2, cy = h/2;
     const baseR = Math.min(w,h) * (0.22 + bass*0.18);
     const grad = ctx.createRadialGradient(cx,cy,0,cx,cy,baseR*2.2);
-    grad.addColorStop(0, `rgba(182,164,255,${0.35+bass*0.35})`);
-    grad.addColorStop(0.5, `rgba(255,171,216,${0.18+mid*0.2})`);
+    grad.addColorStop(0, `rgba(${themeRGB.c1},${0.35+bass*0.35})`);
+    grad.addColorStop(0.5, `rgba(${themeRGB.c2},${0.18+mid*0.2})`);
     grad.addColorStop(1, 'rgba(15,13,26,0)');
     ctx.fillStyle = grad;
     ctx.beginPath();
@@ -980,7 +1380,7 @@
         if(p.y < -30) p.y = h+30; if(p.y > h+30) p.y = -30;
       }
       const alpha = 0.05 + treble*0.25 + p.hueMix*0.05;
-      const color = p.hueMix < 0.33 ? '182,164,255' : p.hueMix < 0.66 ? '255,171,216' : '143,240,224';
+      const color = p.hueMix < 0.33 ? themeRGB.c1 : p.hueMix < 0.66 ? themeRGB.c2 : themeRGB.c3;
       ctx.beginPath();
       ctx.fillStyle = `rgba(${color},${alpha})`;
       ctx.arc(p.x, p.y, p.r*(1+treble*0.6), 0, Math.PI*2);
@@ -988,7 +1388,7 @@
     });
 
     // frequency skyline at bottom, soft bars
-    if(analyser && activeEl === audioEl){
+    if(analyser && isAudioDeck(activeEl)){
       const bars = 40;
       const step = Math.floor(freqData.length/bars);
       const barW = w/bars;
@@ -997,11 +1397,32 @@
         const bh = v * h * 0.4;
         const bx = i*barW;
         const g = ctx.createLinearGradient(0,h-bh,0,h);
-        g.addColorStop(0, 'rgba(143,240,224,0.5)');
-        g.addColorStop(1, 'rgba(143,240,224,0)');
+        g.addColorStop(0, `rgba(${themeRGB.c3},0.5)`);
+        g.addColorStop(1, `rgba(${themeRGB.c3},0)`);
         ctx.fillStyle = g;
         ctx.fillRect(bx+barW*0.15, h-bh, barW*0.7, bh);
       }
+    }
+
+    // easter egg: supernova burst particles (Konami code)
+    if(burstParticles.length){
+      for(let i=burstParticles.length-1;i>=0;i--){
+        const p = burstParticles[i];
+        p.x += p.vx; p.y += p.vy;
+        p.vx *= 0.985; p.vy *= 0.985;
+        p.life -= 0.012;
+        if(p.life <= 0){ burstParticles.splice(i,1); continue; }
+        const color = p.hue < 0.33 ? themeRGB.c1 : p.hue < 0.66 ? themeRGB.c2 : themeRGB.c3;
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(${color},${p.life*0.85})`;
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+    if(supernovaActive){
+      const pulse = 0.5 + 0.5*Math.sin(performance.now()/120);
+      ctx.fillStyle = `rgba(255,255,255,${0.02+pulse*0.05})`;
+      ctx.fillRect(0,0,w,h);
     }
   }
 
