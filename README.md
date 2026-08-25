@@ -1,2 +1,0 @@
-# refactored-system
-one HTML file, no install, no cloud, nothing leaves your browser. Drop mp3/mp4 files onto it (or click to browse) and it builds a playlist in memory. Real audio-reactive visualizer behind the player — a breathing glow that pulses with bass, drifting particles that sparkle on treble, and a soft frequency skyline, all via the Web Audio API’s AnalyserNode. mp4s with actual video play inline; audio-only files get the visualizer. Shuffle, repeat (off/all/one), seek, volume, and space/arrow-key shortcuts all work
