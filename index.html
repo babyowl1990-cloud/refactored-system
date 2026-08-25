@@ -45,6 +45,7 @@
       linear-gradient(180deg, var(--bg-0), var(--bg-1));
     animation: drift 22s ease-in-out infinite alternate;
   }
+  #bgFX{ position:fixed; inset:0; z-index:0; pointer-events:none; width:100vw; height:100vh; display:block; }
   @keyframes drift{
     0%{ filter:hue-rotate(0deg) brightness(1); }
     100%{ filter:hue-rotate(8deg) brightness(1.06); }
@@ -146,6 +147,15 @@
   .controls button:hover{ opacity:1; transform: translateY(-1px); }
   .controls button.active{ opacity:1; }
   .controls button.active svg{ filter: drop-shadow(0 0 6px var(--lav)); stroke: var(--lav); }
+  .repeat-badge{
+    position:absolute; top:-2px; right:-4px;
+    width:14px; height:14px; border-radius:50%;
+    background: linear-gradient(120deg, var(--lav), var(--pink));
+    color: var(--bg-0); font-family:'Space Grotesk', sans-serif; font-weight:600;
+    font-size:9px; line-height:14px; text-align:center;
+    display:none;
+  }
+  #repeatBtn.repeat-one .repeat-badge{ display:block; }
   #playBtn{
     width:52px; height:52px; border-radius:50%;
     background: linear-gradient(135deg, var(--lav), var(--pink));
@@ -173,6 +183,27 @@
   /* ---- studio / FX panel ---- */
   .fx-panel{ display:none; margin-top:22px; }
   .fx-panel.open{ display:block; }
+
+  /* ---- lyrics panel ---- */
+  .lyrics-panel{ display:none; margin-top:22px; }
+  .lyrics-panel.open{ display:block; }
+  .lyrics-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+  .lyrics-header h3{ font-family:'Fraunces', serif; font-weight:450; margin:0; font-size:1.1rem; }
+  .lyrics-body{ max-height:340px; overflow-y:auto; text-align:center; padding:10px 4px; }
+  .lyrics-body::-webkit-scrollbar{ width:6px; }
+  .lyrics-body::-webkit-scrollbar-thumb{ background: rgba(255,255,255,0.15); border-radius:6px; }
+  .lyric-line{
+    padding:7px 0; font-size:0.95rem; color:var(--muted);
+    transition: color .25s, opacity .25s, transform .25s; opacity:0.5;
+  }
+  .lyric-line.current{
+    color:var(--text); font-size:1.18rem; opacity:1;
+    text-shadow: 0 0 18px rgba(var(--lav-rgb),0.5);
+  }
+  .lyrics-plain{
+    white-space:pre-wrap; text-align:left; color:var(--muted);
+    line-height:1.7; font-size:0.88rem; padding:4px 10px;
+  }
   .fx-header{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:22px; }
   .fx-header h3{ font-family:'Fraunces', serif; font-weight:450; margin:0; font-size:1.1rem; }
   .presets{ display:flex; gap:8px; flex-wrap:wrap; }
@@ -289,6 +320,16 @@
   }
   #trackCount{ color:var(--muted); font-size:0.8rem; font-family:'Space Grotesk',sans-serif; }
   .header-actions{ display:flex; gap:8px; }
+  .folder-status{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    font-size:0.76rem; color:var(--muted); margin-bottom:12px;
+  }
+  .folder-status button{
+    font-family:'Space Grotesk', sans-serif; font-size:0.72rem;
+    background: rgba(255,255,255,0.06); border:1px solid var(--panel-border); color:var(--text);
+    padding:5px 11px; border-radius:999px; cursor:pointer; flex-shrink:0;
+  }
+  .folder-status button:hover{ background: rgba(255,255,255,0.12); }
   .header-actions button{
     font-family:'Space Grotesk', sans-serif;
     font-size:0.78rem;
@@ -350,6 +391,7 @@
 <body>
 
 <div class="ambient-bg"></div>
+<canvas id="bgFX"></canvas>
 
 <div class="app">
   <header>
@@ -388,8 +430,9 @@
         <button id="nextBtn" title="Next">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 4 15 12 5 20 5 4"></polygon><rect x="17" y="4" width="2" height="16"></rect></svg>
         </button>
-        <button id="repeatBtn" title="Repeat">
+        <button id="repeatBtn" title="Repeat: off" style="position:relative;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+          <span id="repeatBadge" class="repeat-badge">1</span>
         </button>
       </div>
 
@@ -399,6 +442,10 @@
       </div>
 
       <div class="studio-row">
+        <button id="lyricsToggle" class="studio-btn" title="Open lyrics">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="12" y2="17"></line></svg>
+          Lyrics
+        </button>
         <button id="fxToggle" class="studio-btn" title="Open the Studio panel">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
           Studio
@@ -410,19 +457,35 @@
       <div class="playlist-header">
         <h3>Playlist <span id="trackCount"></span></h3>
         <div class="header-actions">
+          <button id="folderBtn" title="Connect a folder of music">📁 folder</button>
           <button id="addBtn">+ add</button>
           <button id="clearBtn">clear</button>
         </div>
       </div>
 
+      <div class="folder-status" id="folderStatusRow" style="display:none;">
+        <span id="folderStatus"></span>
+        <button id="rescanBtn">rescan</button>
+      </div>
+
       <div id="dropZone" class="drop-zone">
-        drop .mp3 / .mp4 files here, or click to browse
+        drop .mp3 / .mp4 / .lrc files here, or click to browse
       </div>
 
       <ul id="playlist"></ul>
       <p class="empty-hint" id="emptyHint">your playlist is empty</p>
     </section>
   </main>
+
+  <section class="panel lyrics-panel" id="lyricsPanel">
+    <div class="lyrics-header">
+      <h3>Lyrics</h3>
+      <span class="fx-note" id="lyricsSource"></span>
+    </div>
+    <div class="lyrics-body" id="lyricsBody">
+      <p class="empty-hint">no lyrics for this track yet — drop a matching .lrc file onto the playlist, or one will appear automatically if the file has embedded lyrics.</p>
+    </div>
+  </section>
 
   <section class="panel fx-panel" id="fxPanel">
     <div class="fx-header">
@@ -486,6 +549,26 @@
       </div>
 
       <div class="fx-block">
+        <span class="fx-label">Visual Style</span>
+        <div class="presets" id="vizModes">
+          <button data-viz="haze" class="active">Haze</button>
+          <button data-viz="bars">Bars</button>
+          <button data-viz="wave">Wave</button>
+          <button data-viz="radial">Radial</button>
+        </div>
+      </div>
+
+      <div class="fx-block">
+        <span class="fx-label">Background</span>
+        <div class="presets" id="bgFxModes">
+          <button data-bgfx="stars" class="active">Stars</button>
+          <button data-bgfx="orbs">Orbs</button>
+          <button data-bgfx="off">Off</button>
+        </div>
+        <p class="fx-note">drifts &amp; pulses with the bass</p>
+      </div>
+
+      <div class="fx-block">
         <span class="fx-label">Stereo Width</span>
         <div class="fx-row"><label>Width</label><input type="range" id="stereoWidth" min="0" max="200" value="100"><span class="fx-val" id="stereoWidthVal">100%</span></div>
       </div>
@@ -516,7 +599,7 @@
 
 <audio id="audioEl"></audio>
 <audio id="audioEl2"></audio>
-<input type="file" id="fileInput" accept="audio/*,video/mp4,video/*" multiple style="display:none">
+<input type="file" id="fileInput" accept="audio/*,video/mp4,video/*,.lrc" multiple style="display:none">
 
 <script>
 (function(){
@@ -593,6 +676,7 @@
       analyser.fftSize = 256;
       analyser.smoothingTimeConstant = 0.82;
       freqData = new Uint8Array(analyser.frequencyBinCount);
+      timeData = new Uint8Array(analyser.fftSize);
 
       inputGain = audioCtx.createGain();
       trackGainA = audioCtx.createGain(); trackGainA.gain.value = 1;
@@ -699,25 +783,170 @@
     }
     return { artist: '', title: base };
   }
+  function basenameNoExt(filename){
+    return filename.replace(/\.[^/.]+$/, '').toLowerCase();
+  }
+
+  // ---------- lyrics: .lrc parsing ----------
+  function parseLrc(text){
+    const lines = text.split(/\r?\n/);
+    const timeTag = /\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]/g;
+    const result = [];
+    for(const line of lines){
+      const tags = [...line.matchAll(timeTag)];
+      if(!tags.length) continue;
+      const content = line.replace(timeTag, '').trim();
+      tags.forEach(t => {
+        const min = parseInt(t[1],10), sec = parseInt(t[2],10);
+        const ms = t[3] ? parseInt(t[3].padEnd(3,'0'),10) : 0;
+        result.push({ time: min*60 + sec + ms/1000, text: content });
+      });
+    }
+    result.sort((a,b) => a.time - b.time);
+    return result;
+  }
+
+  // ---------- lyrics: embedded ID3v2 USLT tag (best-effort, mp3 only) ----------
+  function decodeUSLT(view, start, size){
+    if(size < 5) return null;
+    const encoding = view.getUint8(start);
+    const end = start + size;
+    const wide = encoding === 1 || encoding === 2;
+    let p = start + 4; // skip encoding byte(1) + language(3)
+    if(wide){ while(p < end-1 && !(view.getUint8(p)===0 && view.getUint8(p+1)===0)) p += 2; p += 2; }
+    else { while(p < end && view.getUint8(p)!==0) p++; p += 1; }
+    const bytes = new Uint8Array(view.buffer, view.byteOffset + p, Math.max(0, end - p));
+    try{
+      if(encoding === 0) return new TextDecoder('iso-8859-1').decode(bytes);
+      if(encoding === 3) return new TextDecoder('utf-8').decode(bytes);
+      if(encoding === 1) return new TextDecoder('utf-16').decode(bytes);
+      if(encoding === 2) return new TextDecoder('utf-16be').decode(bytes);
+    } catch(e){ return null; }
+    return null;
+  }
+  function parseID3USLT(buffer){
+    if(buffer.byteLength < 10) return null;
+    const view = new DataView(buffer);
+    if(view.getUint8(0)!==0x49 || view.getUint8(1)!==0x44 || view.getUint8(2)!==0x33) return null; // 'ID3'
+    const verMajor = view.getUint8(3);
+    const flags = view.getUint8(5);
+    const tagSize = ((view.getUint8(6)&0x7f)<<21)|((view.getUint8(7)&0x7f)<<14)|((view.getUint8(8)&0x7f)<<7)|(view.getUint8(9)&0x7f);
+    let offset = 10;
+    if(flags & 0x40 && offset+4 <= buffer.byteLength){ offset += view.getUint32(offset); } // best-effort extended header skip
+    const end = Math.min(10+tagSize, buffer.byteLength);
+    while(offset < end - 10){
+      const id = String.fromCharCode(view.getUint8(offset),view.getUint8(offset+1),view.getUint8(offset+2),view.getUint8(offset+3));
+      if(id === '\0\0\0\0') break;
+      const frameSize = verMajor >= 4
+        ? ((view.getUint8(offset+4)&0x7f)<<21)|((view.getUint8(offset+5)&0x7f)<<14)|((view.getUint8(offset+6)&0x7f)<<7)|(view.getUint8(offset+7)&0x7f)
+        : view.getUint32(offset+4);
+      const dataStart = offset+10;
+      if(frameSize <= 0 || dataStart+frameSize > buffer.byteLength) break;
+      if(id === 'USLT') return decodeUSLT(view, dataStart, frameSize);
+      offset = dataStart + frameSize;
+    }
+    return null;
+  }
+  async function tryEmbeddedLyrics(track, file){
+    try{
+      const head = await file.slice(0, 400000).arrayBuffer();
+      const text = parseID3USLT(head);
+      if(text && text.trim()){
+        track.lyrics = { type:'plain', text: text.trim() };
+        if(playlist[currentIndex] === track) refreshLyricsPanel();
+        renderPlaylist();
+      }
+    } catch(e){ /* no embedded lyrics found, that's fine */ }
+  }
+
+  // ---------- lyrics panel ----------
+  const lyricsToggle = document.getElementById('lyricsToggle');
+  const lyricsPanel = document.getElementById('lyricsPanel');
+  const lyricsBody = document.getElementById('lyricsBody');
+  const lyricsSourceEl = document.getElementById('lyricsSource');
+  lyricsToggle.addEventListener('click', () => {
+    lyricsPanel.classList.toggle('open');
+    lyricsToggle.classList.toggle('active');
+  });
+
+  function renderLyricsForTrack(track){
+    if(!track || !track.lyrics){
+      lyricsSourceEl.textContent = '';
+      lyricsBody.innerHTML = '<p class="empty-hint">no lyrics for this track yet — drop a matching .lrc file onto the playlist, or one will appear automatically if the file has embedded lyrics.</p>';
+      return;
+    }
+    if(track.lyrics.type === 'synced'){
+      lyricsSourceEl.textContent = 'synced · .lrc';
+      lyricsBody.innerHTML = track.lyrics.lines.map((l,i) =>
+        `<p class="lyric-line" data-i="${i}">${escapeHtml(l.text) || '&nbsp;'}</p>`
+      ).join('');
+    } else {
+      lyricsSourceEl.textContent = 'embedded tag';
+      lyricsBody.innerHTML = `<div class="lyrics-plain">${escapeHtml(track.lyrics.text)}</div>`;
+    }
+  }
+  function refreshLyricsPanel(){
+    renderLyricsForTrack(currentIndex !== -1 ? playlist[currentIndex] : null);
+  }
+  function updateLyricsHighlight(t){
+    const track = currentIndex !== -1 ? playlist[currentIndex] : null;
+    if(!track || !track.lyrics || track.lyrics.type !== 'synced') return;
+    const lines = track.lyrics.lines;
+    let idx = -1;
+    for(let i=0;i<lines.length;i++){ if(lines[i].time <= t) idx = i; else break; }
+    const nodes = lyricsBody.querySelectorAll('.lyric-line');
+    nodes.forEach((n,i) => n.classList.toggle('current', i === idx));
+    if(idx >= 0 && lyricsPanel.classList.contains('open')){
+      const activeNode = nodes[idx];
+      if(activeNode) activeNode.scrollIntoView({ block:'center', behavior:'smooth' });
+    }
+  }
 
   // ---------- file handling ----------
+  const pendingLrc = new Map(); // basename -> parsed synced lines, for .lrc files that arrive before their track
+
   function addFiles(fileList){
-    const files = Array.from(fileList).filter(f =>
-      f.type.startsWith('audio/') || f.type.startsWith('video/') ||
-      /\.(mp3|mp4|m4a|wav|ogg|flac|aac)$/i.test(f.name)
+    const all = Array.from(fileList);
+    const lrcFiles = all.filter(f => /\.lrc$/i.test(f.name));
+    const mediaCandidates = all.filter(f => !/\.lrc$/i.test(f.name) &&
+      (f.type.startsWith('audio/') || f.type.startsWith('video/') || /\.(mp3|mp4|m4a|wav|ogg|flac|aac|webm|mov)$/i.test(f.name))
     );
+
+    lrcFiles.forEach(f => {
+      f.text().then(text => {
+        const parsed = parseLrc(text);
+        const key = basenameNoExt(f.name);
+        const track = playlist.find(t => t.origBasename === key);
+        if(track){
+          track.lyrics = { type:'synced', lines: parsed };
+          if(playlist[currentIndex] === track) refreshLyricsPanel();
+          renderPlaylist();
+        } else {
+          pendingLrc.set(key, parsed);
+        }
+      }).catch(() => {});
+    });
+
+    const existingKeys = new Set(playlist.map(t => t.origKey));
+    const files = mediaCandidates.filter(f => !existingKeys.has(f.name + '|' + f.size));
     files.forEach(f => {
       const { artist, title } = parseNameArtist(f.name);
       const isVideo = f.type.startsWith('video/');
-      playlist.push({
+      const basename = basenameNoExt(f.name);
+      const track = {
         name: title, artist, url: URL.createObjectURL(f),
-        type: f.type, isVideo, duration: null
-      });
+        type: f.type, isVideo, duration: null,
+        origKey: f.name + '|' + f.size, origBasename: basename,
+        lyrics: pendingLrc.has(basename) ? { type:'synced', lines: pendingLrc.get(basename) } : null
+      };
+      playlist.push(track);
+      if(!track.lyrics && !isVideo) tryEmbeddedLyrics(track, f);
     });
     renderPlaylist();
     if(currentIndex === -1 && playlist.length){
       loadTrack(0);
     }
+    return files.length;
   }
 
   fileInput.addEventListener('change', e => addFiles(e.target.files));
@@ -740,6 +969,54 @@
     renderPlaylist();
   });
 
+  // ---------- remember folder (File System Access API, Chromium browsers) ----------
+  const folderBtn = document.getElementById('folderBtn');
+  const folderStatusRow = document.getElementById('folderStatusRow');
+  const folderStatusEl = document.getElementById('folderStatus');
+  const rescanBtn = document.getElementById('rescanBtn');
+  let rememberedDirHandle = null;
+
+  async function collectFilesFromDir(dirHandle, depth=0, acc=[]){
+    if(depth > 4) return acc;
+    for await (const entry of dirHandle.values()){
+      if(entry.kind === 'file'){
+        if(/\.(mp3|mp4|m4a|wav|ogg|flac|aac|webm|mov)$/i.test(entry.name)) acc.push(entry);
+      } else if(entry.kind === 'directory'){
+        await collectFilesFromDir(entry, depth+1, acc);
+      }
+    }
+    return acc;
+  }
+
+  async function syncFolder(){
+    if(!rememberedDirHandle) return;
+    folderStatusEl.textContent = `scanning "${rememberedDirHandle.name}"…`;
+    try{
+      const handles = await collectFilesFromDir(rememberedDirHandle);
+      const files = [];
+      for(const h of handles){
+        try{ files.push(await h.getFile()); } catch(e){ /* skip unreadable file */ }
+      }
+      const added = addFiles(files);
+      folderStatusEl.innerHTML = `📁 <strong>${escapeHtml(rememberedDirHandle.name)}</strong> · ${added} new`;
+    } catch(e){
+      folderStatusEl.textContent = 'could not read that folder';
+    }
+  }
+
+  folderBtn.addEventListener('click', async () => {
+    if(!window.showDirectoryPicker){
+      showToast('folder sync needs Chrome or Edge');
+      return;
+    }
+    try{
+      rememberedDirHandle = await window.showDirectoryPicker();
+      folderStatusRow.style.display = 'flex';
+      await syncFolder();
+    } catch(e){ /* user cancelled the picker */ }
+  });
+  rescanBtn.addEventListener('click', syncFolder);
+
   function renderPlaylist(){
     playlistEl.innerHTML = '';
     emptyHint.style.display = playlist.length ? 'none' : 'block';
@@ -753,7 +1030,7 @@
           <div class="t-name">${escapeHtml(t.name)}</div>
           <div class="t-sub">${escapeHtml(t.artist || (t.isVideo ? 'video' : 'audio'))}</div>
         </span>
-        <span class="t-dur">${t.duration ? fmtTime(t.duration) : ''}</span>
+        <span class="t-dur">${t.lyrics ? '📝 ' : ''}${t.duration ? fmtTime(t.duration) : ''}</span>
         <button class="remove" title="Remove">✕</button>
       `;
       li.addEventListener('click', (e) => {
@@ -820,6 +1097,7 @@
     }
     trackTitle.textContent = t.name;
     trackArtist.textContent = t.artist || (t.isVideo ? 'video file' : 'audio file');
+    refreshLyricsPanel();
 
     activeEl.currentTime = 0;
     updatePlaybackRate();
@@ -887,6 +1165,7 @@
       durTimeEl.textContent = t.duration ? fmtTime(t.duration) : '0:00';
       activeAudioDeck = incomingDeck;
       activeEl = incomingDeck;
+      refreshLyricsPanel();
       renderPlaylist();
 
       setTimeout(() => {
@@ -946,8 +1225,8 @@
   repeatBtn.addEventListener('click', () => {
     repeatMode = (repeatMode + 1) % 3;
     repeatBtn.classList.toggle('active', repeatMode !== 0);
-    repeatBtn.style.opacity = repeatMode === 2 ? '1' : '';
-    repeatBtn.title = repeatMode === 0 ? 'Repeat: off' : repeatMode === 1 ? 'Repeat: all' : 'Repeat: one';
+    repeatBtn.classList.toggle('repeat-one', repeatMode === 2);
+    repeatBtn.title = repeatMode === 0 ? 'Repeat: off' : repeatMode === 1 ? 'Repeat: all' : 'Repeat: one song';
   });
 
   function nextTrack(auto){
@@ -979,6 +1258,7 @@
       curTimeEl.textContent = fmtTime(el.currentTime);
       if(el.duration) seek.value = (el.currentTime / el.duration) * 100;
       if(isAudioDeck(el)) maybeStartCrossfade(el);
+      updateLyricsHighlight(el.currentTime);
     });
   });
 
@@ -1145,6 +1425,90 @@
     applyTheme(btn.dataset.theme);
   });
   applyTheme('dreampop');
+
+  // ---------- visualizer style picker ----------
+  document.getElementById('vizModes').addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if(!btn) return;
+    vizMode = btn.dataset.viz;
+    Array.from(document.querySelectorAll('#vizModes button')).forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+
+  // ---------- ambient background effect (stars / orbs), reacts to bass ----------
+  const bgCanvas = document.getElementById('bgFX');
+  const bgCtx = bgCanvas.getContext('2d');
+  let bgFxMode = 'stars';
+  let bgItems = [];
+
+  function resizeBgCanvas(){
+    bgCanvas.width = window.innerWidth * devicePixelRatio;
+    bgCanvas.height = window.innerHeight * devicePixelRatio;
+    initBgItems();
+  }
+  function initBgItems(){
+    bgItems = [];
+    if(bgFxMode === 'off') return;
+    const isStars = bgFxMode === 'stars';
+    const n = isStars ? 90 : 16;
+    for(let i=0;i<n;i++){
+      bgItems.push({
+        x: Math.random()*bgCanvas.width,
+        y: Math.random()*bgCanvas.height,
+        r: isStars ? (0.6+Math.random()*1.6)*devicePixelRatio : (18+Math.random()*34)*devicePixelRatio,
+        speed: (isStars ? (0.15+Math.random()*0.35) : (0.05+Math.random()*0.12)) * devicePixelRatio,
+        drift: (Math.random()-0.5) * 0.12 * devicePixelRatio,
+        phase: Math.random()*Math.PI*2,
+        hueMix: Math.random()
+      });
+    }
+  }
+  window.addEventListener('resize', resizeBgCanvas);
+
+  function drawBg(){
+    requestAnimationFrame(drawBg);
+    const w = bgCanvas.width, h = bgCanvas.height;
+    bgCtx.clearRect(0,0,w,h);
+    if(bgFxMode === 'off' || reduceMotion){ return; }
+    const isStars = bgFxMode === 'stars';
+    const bass = liveBass, treble = liveTreble;
+
+    bgItems.forEach(p => {
+      p.y += p.speed * (1 + bass*2.2);
+      p.x += p.drift;
+      if(p.y - p.r > h){ p.y = -p.r; p.x = Math.random()*w; }
+      if(p.x < -40) p.x = w+40; if(p.x > w+40) p.x = -40;
+
+      const color = p.hueMix < 0.33 ? themeRGB.c1 : p.hueMix < 0.66 ? themeRGB.c2 : themeRGB.c3;
+      if(isStars){
+        const twinkle = 0.35 + 0.4*Math.sin(performance.now()/500 + p.phase) + treble*0.3;
+        bgCtx.beginPath();
+        bgCtx.fillStyle = `rgba(${color},${Math.max(0.1,Math.min(0.9,twinkle))})`;
+        bgCtx.arc(p.x, p.y, p.r*(1+bass*0.8), 0, Math.PI*2);
+        bgCtx.fill();
+      } else {
+        const grad = bgCtx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*(1+bass*0.5));
+        grad.addColorStop(0, `rgba(${color},${0.14+bass*0.12})`);
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        bgCtx.fillStyle = grad;
+        bgCtx.beginPath();
+        bgCtx.arc(p.x, p.y, p.r*(1+bass*0.5), 0, Math.PI*2);
+        bgCtx.fill();
+      }
+    });
+  }
+
+  document.getElementById('bgFxModes').addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if(!btn) return;
+    bgFxMode = btn.dataset.bgfx;
+    Array.from(document.querySelectorAll('#bgFxModes button')).forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    initBgItems();
+  });
+
+  resizeBgCanvas();
+  requestAnimationFrame(drawBg);
 
   const presetsRow = document.getElementById('presets');
   function clearPresetActive(){
@@ -1315,6 +1679,11 @@
 
   // ---------- visualizer ----------
   let particles = [];
+  let timeData = null;
+  let radialRotation = 0;
+  let vizMode = 'haze'; // 'haze' | 'bars' | 'wave' | 'radial'
+  let liveBass = 0, liveMid = 0, liveTreble = 0;
+
   function resizeCanvas(){
     const rect = canvas.parentElement.getBoundingClientRect();
     canvas.width = rect.width * devicePixelRatio;
@@ -1341,25 +1710,15 @@
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  function draw(){
-    requestAnimationFrame(draw);
-    if(canvas.style.display === 'none') return;
-    const w = canvas.width, h = canvas.height;
-    let bass=0, mid=0, treble=0;
+  function lerpColor(a, b, t){
+    const pa = a.split(',').map(Number), pb = b.split(',').map(Number);
+    return `${Math.round(pa[0]+(pb[0]-pa[0])*t)},${Math.round(pa[1]+(pb[1]-pa[1])*t)},${Math.round(pa[2]+(pb[2]-pa[2])*t)}`;
+  }
+  function bandColor(t){
+    return t < 0.5 ? lerpColor(themeRGB.c1, themeRGB.c2, t*2) : lerpColor(themeRGB.c2, themeRGB.c3, (t-0.5)*2);
+  }
 
-    if(analyser && isAudioDeck(activeEl)){
-      analyser.getByteFrequencyData(freqData);
-      const n = freqData.length;
-      const b1 = Math.floor(n*0.1), b2 = Math.floor(n*0.5);
-      for(let i=0;i<b1;i++) bass += freqData[i];
-      for(let i=b1;i<b2;i++) mid += freqData[i];
-      for(let i=b2;i<n;i++) treble += freqData[i];
-      bass = bass/b1/255; mid = mid/(b2-b1)/255; treble = treble/(n-b2)/255;
-    }
-
-    ctx.clearRect(0,0,w,h);
-
-    // central breathing glow, pulses with bass
+  function renderHazeMode(w,h,bass,mid,treble){
     const cx = w/2, cy = h/2;
     const baseR = Math.min(w,h) * (0.22 + bass*0.18);
     const grad = ctx.createRadialGradient(cx,cy,0,cx,cy,baseR*2.2);
@@ -1371,7 +1730,6 @@
     ctx.arc(cx,cy,baseR*2.2,0,Math.PI*2);
     ctx.fill();
 
-    // drifting haze particles, sparkle with treble
     particles.forEach(p => {
       if(!reduceMotion){
         p.x += p.vx * (1+bass*3);
@@ -1387,7 +1745,6 @@
       ctx.fill();
     });
 
-    // frequency skyline at bottom, soft bars
     if(analyser && isAudioDeck(activeEl)){
       const bars = 40;
       const step = Math.floor(freqData.length/bars);
@@ -1403,8 +1760,109 @@
         ctx.fillRect(bx+barW*0.15, h-bh, barW*0.7, bh);
       }
     }
+  }
 
-    // easter egg: supernova burst particles (Konami code)
+  function renderBarsMode(w,h){
+    if(!analyser || !isAudioDeck(activeEl)) return;
+    const bars = 56;
+    const step = Math.floor(freqData.length/bars);
+    const gap = 3*devicePixelRatio;
+    const slotW = w/bars;
+    for(let i=0;i<bars;i++){
+      const v = freqData[i*step]/255;
+      const bh = Math.max(4, v*h*0.82);
+      const bx = i*slotW + gap/2;
+      const bw = slotW - gap;
+      const color = bandColor(i/bars);
+      const grad = ctx.createLinearGradient(0,h-bh,0,h);
+      grad.addColorStop(0, `rgba(${color},0.9)`);
+      grad.addColorStop(1, `rgba(${color},0.15)`);
+      ctx.fillStyle = grad;
+      if(ctx.roundRect){ ctx.beginPath(); ctx.roundRect(bx, h-bh, bw, bh, 4); ctx.fill(); }
+      else ctx.fillRect(bx, h-bh, bw, bh);
+    }
+  }
+
+  function renderWaveMode(w,h){
+    if(!analyser || !isAudioDeck(activeEl) || !timeData){
+      ctx.strokeStyle = `rgba(${themeRGB.c1},0.35)`;
+      ctx.lineWidth = 2*devicePixelRatio;
+      ctx.beginPath(); ctx.moveTo(0,h/2); ctx.lineTo(w,h/2); ctx.stroke();
+      return;
+    }
+    analyser.getByteTimeDomainData(timeData);
+    ctx.lineWidth = 2.5*devicePixelRatio;
+    ctx.strokeStyle = `rgba(${themeRGB.c1},0.95)`;
+    ctx.shadowColor = `rgba(${themeRGB.c1},0.7)`;
+    ctx.shadowBlur = 14;
+    ctx.beginPath();
+    const slice = w/timeData.length;
+    for(let i=0;i<timeData.length;i++){
+      const v = timeData[i]/128 - 1;
+      const y = h/2 + v*(h/2)*0.85;
+      const x = i*slice;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+
+  function renderRadialMode(w,h,bass){
+    const cx=w/2, cy=h/2;
+    const baseRadius = Math.min(w,h)*0.14;
+    if(!analyser || !isAudioDeck(activeEl)){
+      const grad = ctx.createRadialGradient(cx,cy,0,cx,cy,baseRadius*1.4);
+      grad.addColorStop(0, `rgba(${themeRGB.c1},0.25)`);
+      grad.addColorStop(1, 'rgba(15,13,26,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath(); ctx.arc(cx,cy,baseRadius*1.4,0,Math.PI*2); ctx.fill();
+      return;
+    }
+    const bars = 48;
+    const step = Math.floor(freqData.length/bars);
+    radialRotation += 0.0025 + bass*0.01;
+    for(let i=0;i<bars;i++){
+      const v = freqData[i*step]/255;
+      const len = baseRadius*0.3 + v*Math.min(w,h)*0.3;
+      const angle = radialRotation + (i/bars)*Math.PI*2;
+      const x1 = cx+Math.cos(angle)*baseRadius, y1 = cy+Math.sin(angle)*baseRadius;
+      const x2 = cx+Math.cos(angle)*(baseRadius+len), y2 = cy+Math.sin(angle)*(baseRadius+len);
+      ctx.strokeStyle = `rgba(${bandColor(i/bars)},${0.35+v*0.55})`;
+      ctx.lineWidth = 3*devicePixelRatio;
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    }
+    const grad = ctx.createRadialGradient(cx,cy,0,cx,cy,baseRadius*1.6);
+    grad.addColorStop(0, `rgba(${themeRGB.c1},${0.3+bass*0.3})`);
+    grad.addColorStop(1, 'rgba(15,13,26,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(cx,cy,baseRadius*1.6,0,Math.PI*2); ctx.fill();
+  }
+
+  function draw(){
+    requestAnimationFrame(draw);
+    let bass=0, mid=0, treble=0;
+
+    if(analyser && isAudioDeck(activeEl)){
+      analyser.getByteFrequencyData(freqData);
+      const n = freqData.length;
+      const b1 = Math.floor(n*0.1), b2 = Math.floor(n*0.5);
+      for(let i=0;i<b1;i++) bass += freqData[i];
+      for(let i=b1;i<b2;i++) mid += freqData[i];
+      for(let i=b2;i<n;i++) treble += freqData[i];
+      bass = bass/b1/255; mid = mid/(b2-b1)/255; treble = treble/(n-b2)/255;
+    }
+    liveBass = bass; liveMid = mid; liveTreble = treble;
+
+    if(canvas.style.display === 'none') return;
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0,0,w,h);
+
+    if(vizMode === 'bars') renderBarsMode(w,h);
+    else if(vizMode === 'wave') renderWaveMode(w,h);
+    else if(vizMode === 'radial') renderRadialMode(w,h,bass);
+    else renderHazeMode(w,h,bass,mid,treble);
+
+    // easter egg: supernova burst particles (Konami code) — layered on top of any mode
     if(burstParticles.length){
       for(let i=burstParticles.length-1;i>=0;i--){
         const p = burstParticles[i];
