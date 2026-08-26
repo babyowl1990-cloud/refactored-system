@@ -187,18 +187,27 @@
   /* ---- lyrics panel ---- */
   .lyrics-panel{ display:none; margin-top:22px; }
   .lyrics-panel.open{ display:block; }
-  .lyrics-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+  .lyrics-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
   .lyrics-header h3{ font-family:'Fraunces', serif; font-weight:450; margin:0; font-size:1.1rem; }
-  .lyrics-body{ max-height:340px; overflow-y:auto; text-align:center; padding:10px 4px; }
+  .lyrics-header-right{ display:flex; align-items:center; gap:10px; }
+  .auto-scroll-label{ font-size:0.72rem; color:var(--muted); }
+  .lyrics-body{ max-height:340px; overflow-y:auto; text-align:center; padding:10px 4px; scroll-behavior:smooth; }
   .lyrics-body::-webkit-scrollbar{ width:6px; }
   .lyrics-body::-webkit-scrollbar-thumb{ background: rgba(255,255,255,0.15); border-radius:6px; }
   .lyric-line{
-    padding:7px 0; font-size:0.95rem; color:var(--muted);
-    transition: color .25s, opacity .25s, transform .25s; opacity:0.5;
+    padding:8px 0; font-size:0.95rem; color:var(--muted);
+    opacity:0.45; transform: scale(0.97);
+    transform-origin:center;
+    transition: color .3s ease, opacity .35s ease, transform .35s cubic-bezier(.34,1.4,.64,1);
   }
   .lyric-line.current{
-    color:var(--text); font-size:1.18rem; opacity:1;
-    text-shadow: 0 0 18px rgba(var(--lav-rgb),0.5);
+    color:var(--text); font-size:1.2rem; opacity:1;
+    transform: scale(1.06);
+    animation: lyricGlow 1.8s ease-in-out infinite alternate;
+  }
+  @keyframes lyricGlow{
+    0%{ text-shadow: 0 0 8px rgba(var(--lav-rgb),0.3); }
+    100%{ text-shadow: 0 0 24px rgba(var(--lav-rgb),0.75); }
   }
   .lyrics-plain{
     white-space:pre-wrap; text-align:left; color:var(--muted);
@@ -480,7 +489,11 @@
   <section class="panel lyrics-panel" id="lyricsPanel">
     <div class="lyrics-header">
       <h3>Lyrics</h3>
-      <span class="fx-note" id="lyricsSource"></span>
+      <div class="lyrics-header-right">
+        <span class="auto-scroll-label">auto-scroll</span>
+        <label class="switch"><input type="checkbox" id="lyricsAutoScroll" checked><span class="switch-track"></span></label>
+        <span class="fx-note" id="lyricsSource"></span>
+      </div>
     </div>
     <div class="lyrics-body" id="lyricsBody">
       <p class="empty-hint">no lyrics for this track yet — drop a matching .lrc file onto the playlist, or one will appear automatically if the file has embedded lyrics.</p>
@@ -864,12 +877,19 @@
   const lyricsPanel = document.getElementById('lyricsPanel');
   const lyricsBody = document.getElementById('lyricsBody');
   const lyricsSourceEl = document.getElementById('lyricsSource');
+  const lyricsAutoScrollBox = document.getElementById('lyricsAutoScroll');
+  let lyricsAutoScroll = true;
+  let lastLyricIdx = -1;
   lyricsToggle.addEventListener('click', () => {
     lyricsPanel.classList.toggle('open');
     lyricsToggle.classList.toggle('active');
   });
+  lyricsAutoScrollBox.addEventListener('change', () => {
+    lyricsAutoScroll = lyricsAutoScrollBox.checked;
+  });
 
   function renderLyricsForTrack(track){
+    lastLyricIdx = -1;
     if(!track || !track.lyrics){
       lyricsSourceEl.textContent = '';
       lyricsBody.innerHTML = '<p class="empty-hint">no lyrics for this track yet — drop a matching .lrc file onto the playlist, or one will appear automatically if the file has embedded lyrics.</p>';
@@ -894,11 +914,17 @@
     const lines = track.lyrics.lines;
     let idx = -1;
     for(let i=0;i<lines.length;i++){ if(lines[i].time <= t) idx = i; else break; }
+    if(idx === lastLyricIdx) return; // line hasn't changed, nothing to update
+    lastLyricIdx = idx;
     const nodes = lyricsBody.querySelectorAll('.lyric-line');
     nodes.forEach((n,i) => n.classList.toggle('current', i === idx));
-    if(idx >= 0 && lyricsPanel.classList.contains('open')){
+    if(idx >= 0 && lyricsAutoScroll && lyricsPanel.classList.contains('open')){
       const activeNode = nodes[idx];
-      if(activeNode) activeNode.scrollIntoView({ block:'center', behavior:'smooth' });
+      if(activeNode){
+        // scroll only the lyrics box itself — never the page — by setting scrollTop directly
+        const target = activeNode.offsetTop - (lyricsBody.clientHeight/2) + (activeNode.clientHeight/2);
+        lyricsBody.scrollTop = Math.max(0, target);
+      }
     }
   }
 
