@@ -103,7 +103,46 @@
     position:absolute; inset:0; width:100%; height:100%;
     object-fit:cover; display:none; background:#000;
   }
+  .theater-btn{
+    position:absolute; bottom:10px; right:10px; z-index:5;
+    width:34px; height:34px; border-radius:50%;
+    background: rgba(15,13,26,0.55); backdrop-filter: blur(6px);
+    border:1px solid rgba(255,255,255,0.18); color:var(--text);
+    display:none; align-items:center; justify-content:center; cursor:pointer;
+    opacity:0; transition: opacity .2s, background .15s;
+  }
+  .theater-btn:hover{ background: rgba(255,255,255,0.16); }
+  .media-stage:hover .theater-btn{ opacity:1; }
+  .media-stage.has-video .theater-btn{ display:flex; }
 
+  /* ---- theater mode ---- */
+  #theaterBackdrop{
+    position:fixed; inset:0; z-index:190;
+    background: rgba(6,5,12,0.85); backdrop-filter: blur(20px);
+    opacity:0; pointer-events:none; transition: opacity .4s ease;
+  }
+  body.theater-on{ overflow:hidden; }
+  body.theater-on #theaterBackdrop{ opacity:1; pointer-events:auto; }
+  body.theater-on #videoEl{
+    position:fixed !important;
+    top:50%; left:50%;
+    transform: translate(-50%,-50%);
+    width:min(90vw, 90vh*16/9);
+    height:auto; max-height:88vh;
+    z-index:200; object-fit:contain;
+    border-radius:18px;
+    box-shadow: 0 0 90px rgba(var(--lav-rgb),0.32), 0 20px 70px rgba(0,0,0,0.55);
+  }
+  .theater-controls{ position:fixed; top:24px; right:24px; z-index:201; display:none; gap:10px; }
+  body.theater-on .theater-controls{ display:flex; }
+  .theater-controls button{
+    width:40px; height:40px; border-radius:50%;
+    background: rgba(15,13,26,0.6); backdrop-filter: blur(10px);
+    border:1px solid rgba(255,255,255,0.18); color:var(--text);
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    transition: background .15s;
+  }
+  .theater-controls button:hover{ background: rgba(255,255,255,0.16); }
   .now-playing{ text-align:center; margin-bottom:6px; }
   .now-playing h2{
     font-family:'Fraunces', serif;
@@ -413,6 +452,9 @@
       <div class="media-stage">
         <canvas id="viz"></canvas>
         <video id="videoEl" playsinline></video>
+        <button id="theaterBtn" class="theater-btn" title="Theater mode">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"></path><path d="M21 8V5a2 2 0 0 0-2-2h-3"></path><path d="M3 16v3a2 2 0 0 0 2 2h3"></path><path d="M16 21h3a2 2 0 0 0 2-2v-3"></path></svg>
+        </button>
       </div>
 
       <div class="now-playing">
@@ -612,6 +654,15 @@
 
 <audio id="audioEl"></audio>
 <audio id="audioEl2"></audio>
+<div id="theaterBackdrop"></div>
+<div class="theater-controls">
+  <button id="theaterFullscreenBtn" title="Fullscreen">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"></path><path d="M21 8V5a2 2 0 0 0-2-2h-3"></path><path d="M3 16v3a2 2 0 0 0 2 2h3"></path><path d="M16 21h3a2 2 0 0 0 2-2v-3"></path></svg>
+  </button>
+  <button id="theaterExitBtn" title="Exit theater mode">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+  </button>
+</div>
 <input type="file" id="fileInput" accept="audio/*,video/mp4,video/*,.lrc" multiple style="display:none">
 
 <script>
@@ -621,6 +672,7 @@
   const videoEl = document.getElementById('videoEl');
   const canvas = document.getElementById('viz');
   const ctx = canvas.getContext('2d');
+  const mediaStage = document.querySelector('.media-stage');
   const fileInput = document.getElementById('fileInput');
   const dropZone = document.getElementById('dropZone');
   const playlistEl = document.getElementById('playlist');
@@ -1112,6 +1164,7 @@
       canvas.style.display = 'none';
       videoEl.src = t.url;
       activeEl = videoEl;
+      mediaStage.classList.add('has-video');
     } else {
       videoEl.style.display = 'none';
       canvas.style.display = 'block';
@@ -1120,6 +1173,8 @@
       activeAudioDeck = audioEl;
       trackGainA.gain.value = 1;
       trackGainB.gain.value = 0;
+      mediaStage.classList.remove('has-video');
+      if(theaterOn) exitTheater();
     }
     trackTitle.textContent = t.name;
     trackArtist.textContent = t.artist || (t.isVideo ? 'video file' : 'audio file');
@@ -1630,6 +1685,53 @@
       tickSleepTimer();
     }
   }));
+
+  // ---------- theater mode (video tracks only) ----------
+  const theaterBtn = document.getElementById('theaterBtn');
+  const theaterBackdrop = document.getElementById('theaterBackdrop');
+  const theaterExitBtn = document.getElementById('theaterExitBtn');
+  const theaterFullscreenBtn = document.getElementById('theaterFullscreenBtn');
+  let theaterOn = false;
+
+  function enterTheater(){
+    if(theaterOn || videoEl.style.display !== 'block') return;
+    const before = videoEl.getBoundingClientRect();
+    theaterOn = true;
+    document.body.appendChild(videoEl); // escape .app's stacking context so z-index actually wins over the backdrop
+    document.body.classList.add('theater-on');
+    const after = videoEl.getBoundingClientRect();
+    const dx = before.left - after.left, dy = before.top - after.top;
+    const sx = before.width / after.width, sy = before.height / after.height;
+    videoEl.animate(
+      [{ transform:`translate(${dx}px,${dy}px) scale(${sx},${sy})` }, { transform:'translate(0,0) scale(1,1)' }],
+      { duration:480, easing:'cubic-bezier(.22,1,.36,1)' }
+    );
+  }
+  function exitTheater(){
+    if(!theaterOn) return;
+    const before = videoEl.getBoundingClientRect();
+    theaterOn = false;
+    document.body.classList.remove('theater-on');
+    mediaStage.appendChild(videoEl); // move it back into its normal spot in the player
+    const after = videoEl.getBoundingClientRect();
+    const dx = before.left - after.left, dy = before.top - after.top;
+    const sx = before.width / after.width, sy = before.height / after.height;
+    videoEl.animate(
+      [{ transform:`translate(${dx}px,${dy}px) scale(${sx},${sy})` }, { transform:'translate(0,0) scale(1,1)' }],
+      { duration:420, easing:'cubic-bezier(.22,1,.36,1)' }
+    );
+    if(document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+  }
+  theaterBtn.addEventListener('click', enterTheater);
+  theaterExitBtn.addEventListener('click', exitTheater);
+  theaterBackdrop.addEventListener('click', exitTheater);
+  theaterFullscreenBtn.addEventListener('click', () => {
+    if(document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+    else videoEl.requestFullscreen().catch(()=>{});
+  });
+  document.addEventListener('keydown', e => {
+    if(e.code === 'Escape' && theaterOn && !document.fullscreenElement) exitTheater();
+  });
 
   // ---------- easter eggs ----------
   const KONAMI = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','KeyB','KeyA'];
