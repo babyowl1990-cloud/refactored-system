@@ -43,8 +43,10 @@
       radial-gradient(560px 420px at 88% 18%, rgba(var(--pink-rgb),0.12), transparent 60%),
       radial-gradient(700px 500px at 50% 100%, rgba(var(--mint-rgb),0.08), transparent 60%),
       linear-gradient(180deg, var(--bg-0), var(--bg-1));
-    animation: drift 22s ease-in-out infinite alternate;
+    animation: drift 30s ease-in-out infinite alternate;
+    transition: filter 1.2s ease;
   }
+  body.is-playing .ambient-bg{ animation-duration: 16s; }
   #bgFX{ position:fixed; inset:0; z-index:0; pointer-events:none; width:100vw; height:100vh; display:block; }
   @keyframes drift{
     0%{ filter:hue-rotate(0deg) brightness(1); }
@@ -206,7 +208,7 @@
   .volume-row{ display:flex; align-items:center; gap:10px; color:var(--muted); }
   .volume-row svg{ flex-shrink:0; opacity:0.75; }
 
-  .studio-row{ display:flex; justify-content:flex-end; margin-top:14px; }
+  .studio-row{ display:flex; justify-content:flex-end; flex-wrap:wrap; gap:10px; margin-top:14px; }
   .studio-btn{
     display:flex; align-items:center; gap:7px;
     background: rgba(255,255,255,0.06); border:1px solid var(--panel-border); color:var(--text);
@@ -220,12 +222,12 @@
   }
 
   /* ---- studio / FX panel ---- */
-  .fx-panel{ display:none; margin-top:22px; }
-  .fx-panel.open{ display:block; }
+  .fx-panel{ max-height:0; opacity:0; overflow:hidden; margin-top:0; transition: max-height .4s ease, opacity .3s ease, margin-top .4s ease; }
+  .fx-panel.open{ max-height:2400px; opacity:1; margin-top:22px; }
 
   /* ---- lyrics panel ---- */
-  .lyrics-panel{ display:none; margin-top:22px; }
-  .lyrics-panel.open{ display:block; }
+  .lyrics-panel{ max-height:0; opacity:0; overflow:hidden; margin-top:0; transition: max-height .4s ease, opacity .3s ease, margin-top .4s ease; }
+  .lyrics-panel.open{ max-height:900px; opacity:1; margin-top:22px; }
   .lyrics-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
   .lyrics-header h3{ font-family:'Fraunces', serif; font-weight:450; margin:0; font-size:1.1rem; }
   .lyrics-header-right{ display:flex; align-items:center; gap:10px; }
@@ -254,6 +256,18 @@
   }
   .fx-header{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:22px; }
   .fx-header h3{ font-family:'Fraunces', serif; font-weight:450; margin:0; font-size:1.1rem; }
+  .fx-header-right{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .fx-tabs{ display:flex; gap:6px; background: rgba(255,255,255,0.04); border:1px solid var(--panel-border); border-radius:999px; padding:3px; }
+  .fx-tabs button{
+    font-family:'Space Grotesk', sans-serif; font-size:0.76rem; color:var(--muted);
+    background:none; border:none; padding:6px 14px; border-radius:999px; cursor:pointer; transition: all .15s;
+  }
+  .fx-tabs button:hover{ color:var(--text); }
+  .fx-tabs button.active{ color:var(--bg-0); background: linear-gradient(120deg, var(--lav), var(--pink)); }
+  .fx-tab-content{ display:none; }
+  .fx-tab-content.active{ display:block; animation: tabFadeIn .25s ease; }
+  @keyframes tabFadeIn{ from{ opacity:0; transform:translateY(4px); } to{ opacity:1; transform:translateY(0); } }
+  #presets{ margin-bottom:20px; }
   .presets{ display:flex; gap:8px; flex-wrap:wrap; }
   .presets button{
     font-family:'Space Grotesk', sans-serif; font-size:0.76rem;
@@ -427,13 +441,45 @@
   #playlist li .t-dur{ color:var(--muted); font-size:0.72rem; flex-shrink:0; }
   #playlist li .remove{
     opacity:0; background:none; border:none; color:var(--muted); cursor:pointer;
-    font-size:0.9rem; flex-shrink:0; padding:2px 4px;
+    font-size:0.9rem; flex-shrink:0; padding:6px 8px;
   }
   #playlist li:hover .remove{ opacity:1; }
+  @media (hover:none){ #playlist li .remove{ opacity:0.55; } }
 
   .empty-hint{ color:var(--muted); font-size:0.82rem; text-align:center; padding:18px 0; }
 
   footer{ text-align:center; margin-top:34px; color:var(--muted); font-size:0.72rem; letter-spacing:0.06em; }
+
+  /* ---- onboarding banner ---- */
+  .onboard-banner{
+    display:flex; align-items:flex-start; gap:14px;
+    background: var(--panel); border:1px solid var(--panel-border); border-radius:14px;
+    padding:14px 16px; margin-bottom:22px; backdrop-filter: blur(14px);
+  }
+  .onboard-banner p{ margin:0; font-size:0.82rem; color:var(--muted); line-height:1.6; }
+  .onboard-banner strong{ color:var(--text); font-weight:600; }
+  .onboard-banner button{
+    flex-shrink:0; background:none; border:none; color:var(--muted); cursor:pointer;
+    font-size:0.95rem; padding:2px 4px; line-height:1;
+  }
+  .onboard-banner button:hover{ color:var(--text); }
+
+  /* ---- general polish: press feedback + keyboard focus ---- */
+  .studio-btn:active, .presets button:active, .theme-swatches button:active,
+  .sleep-options button:active, .header-actions button:active, .reset-btn:active,
+  .fx-tabs button:active, #playBtn:active, .controls button:active{
+    transform: scale(0.94);
+  }
+  :focus-visible{ outline: 2px solid var(--lav); outline-offset:2px; border-radius:4px; }
+
+  /* ---- small screens ---- */
+  @media (max-width:480px){
+    .app{ padding:26px 14px 48px; }
+    header h1{ font-size:2.1rem; }
+    .media-stage{ height:180px; }
+    .panel{ padding:16px; }
+    .controls{ gap:14px; }
+  }
 </style>
 </head>
 <body>
@@ -446,6 +492,11 @@
     <h1 id="logoTitle">Haze</h1>
     <p>your files · your air · no cloud</p>
   </header>
+
+  <div class="onboard-banner" id="onboardBanner">
+    <p>Drop your music to start · <strong>Studio</strong> has EQ, effects, themes &amp; more · <strong>Lyrics</strong> syncs matching .lrc files · try <strong>📁 folder</strong> to add a whole library at once</p>
+    <button id="onboardDismiss" title="Dismiss" aria-label="Dismiss">✕</button>
+  </div>
 
   <main>
     <section class="panel player-panel">
@@ -545,106 +596,124 @@
   <section class="panel fx-panel" id="fxPanel">
     <div class="fx-header">
       <h3>Studio</h3>
+      <div class="fx-header-right">
+        <div class="fx-tabs" id="fxTabs">
+          <button data-tab="sound" class="active">Sound</button>
+          <button data-tab="visuals">Visuals</button>
+          <button data-tab="timer">Timer</button>
+        </div>
+        <button id="fxReset" class="reset-btn">Reset all</button>
+      </div>
+    </div>
+
+    <div class="fx-tab-content active" data-tab-content="sound">
       <div class="presets" id="presets">
         <button data-preset="flat">Flat</button>
         <button data-preset="bass">Bass Boost</button>
         <button data-preset="vocal">Vocal</button>
         <button data-preset="haze">Haze</button>
       </div>
+
+      <div class="fx-grid">
+        <div class="eq-block">
+          <span class="fx-label">Equalizer</span>
+          <div class="eq-sliders">
+            <div class="eq-band"><div class="slider-wrap"><input type="range" class="eqSlider" id="eq0" min="-12" max="12" step="0.5" value="0"></div><span class="eq-name">60</span></div>
+            <div class="eq-band"><div class="slider-wrap"><input type="range" class="eqSlider" id="eq1" min="-12" max="12" step="0.5" value="0"></div><span class="eq-name">250</span></div>
+            <div class="eq-band"><div class="slider-wrap"><input type="range" class="eqSlider" id="eq2" min="-12" max="12" step="0.5" value="0"></div><span class="eq-name">1k</span></div>
+            <div class="eq-band"><div class="slider-wrap"><input type="range" class="eqSlider" id="eq3" min="-12" max="12" step="0.5" value="0"></div><span class="eq-name">4k</span></div>
+            <div class="eq-band"><div class="slider-wrap"><input type="range" class="eqSlider" id="eq4" min="-12" max="12" step="0.5" value="0"></div><span class="eq-name">12k</span></div>
+          </div>
+        </div>
+
+        <div class="fx-block">
+          <span class="fx-label">Echo</span>
+          <div class="fx-row"><label>Mix</label><input type="range" id="echoMix" min="0" max="100" value="0"><span class="fx-val" id="echoMixVal">0%</span></div>
+          <div class="fx-row"><label>Time</label><input type="range" id="echoTime" min="50" max="800" value="300"><span class="fx-val" id="echoTimeVal">300ms</span></div>
+          <div class="fx-row"><label>Feedback</label><input type="range" id="echoFeedback" min="0" max="80" value="30"><span class="fx-val" id="echoFeedbackVal">30%</span></div>
+        </div>
+
+        <div class="fx-block">
+          <span class="fx-label">Reverb</span>
+          <div class="fx-row"><label>Mix</label><input type="range" id="reverbMix" min="0" max="100" value="0"><span class="fx-val" id="reverbMixVal">0%</span></div>
+          <div class="fx-row"><label>Size</label><select id="reverbSize"><option value="short">Short</option><option value="medium" selected>Medium</option><option value="long">Long</option></select></div>
+        </div>
+
+        <div class="fx-block">
+          <span class="fx-label">Preamp</span>
+          <div class="fx-row"><label>Gain</label><input type="range" id="preamp" min="-12" max="12" step="0.5" value="0"><span class="fx-val" id="preampVal">0dB</span></div>
+        </div>
+
+        <div class="fx-block">
+          <span class="fx-label">Stereo Width</span>
+          <div class="fx-row"><label>Width</label><input type="range" id="stereoWidth" min="0" max="200" value="100"><span class="fx-val" id="stereoWidthVal">100%</span></div>
+        </div>
+
+        <div class="fx-block">
+          <span class="fx-label">Speed</span>
+          <div class="fx-row"><label>Rate</label><input type="range" id="playRate" min="50" max="150" value="100"><span class="fx-val" id="playRateVal">1.00x</span></div>
+          <p class="fx-note">changes pitch too</p>
+        </div>
+
+        <div class="fx-block">
+          <span class="fx-label">Crossfade</span>
+          <div class="fx-row"><label>Enable</label>
+            <label class="switch"><input type="checkbox" id="crossfadeToggle"><span class="switch-track"></span></label>
+          </div>
+          <div class="fx-row"><label>Length</label><input type="range" id="crossfadeLen" min="1" max="10" step="0.5" value="4"><span class="fx-val" id="crossfadeLenVal">4.0s</span></div>
+          <p class="fx-note">audio tracks only, not video</p>
+        </div>
+      </div>
     </div>
 
-    <div class="fx-grid">
-      <div class="eq-block">
-        <span class="fx-label">Equalizer</span>
-        <div class="eq-sliders">
-          <div class="eq-band"><div class="slider-wrap"><input type="range" class="eqSlider" id="eq0" min="-12" max="12" step="0.5" value="0"></div><span class="eq-name">60</span></div>
-          <div class="eq-band"><div class="slider-wrap"><input type="range" class="eqSlider" id="eq1" min="-12" max="12" step="0.5" value="0"></div><span class="eq-name">250</span></div>
-          <div class="eq-band"><div class="slider-wrap"><input type="range" class="eqSlider" id="eq2" min="-12" max="12" step="0.5" value="0"></div><span class="eq-name">1k</span></div>
-          <div class="eq-band"><div class="slider-wrap"><input type="range" class="eqSlider" id="eq3" min="-12" max="12" step="0.5" value="0"></div><span class="eq-name">4k</span></div>
-          <div class="eq-band"><div class="slider-wrap"><input type="range" class="eqSlider" id="eq4" min="-12" max="12" step="0.5" value="0"></div><span class="eq-name">12k</span></div>
+    <div class="fx-tab-content" data-tab-content="visuals">
+      <div class="fx-grid">
+        <div class="fx-block">
+          <span class="fx-label">Color Theme</span>
+          <div class="theme-swatches" id="themeSwatches">
+            <button data-theme="dreampop" class="active" title="Dream Pop" style="--sw1:#b6a4ff;--sw2:#ffabd8;--sw3:#8ff0e0;"></button>
+            <button data-theme="midnight" title="Midnight Neon" style="--sw1:#6ee7ff;--sw2:#a78bfa;--sw3:#f472b6;"></button>
+            <button data-theme="sakura" title="Sakura" style="--sw1:#ffb7c5;--sw2:#ffd9a0;--sw3:#c9a7ff;"></button>
+            <button data-theme="solar" title="Solar Flare" style="--sw1:#ffb454;--sw2:#ff6b6b;--sw3:#ffe27a;"></button>
+            <button data-theme="mono" title="Mono" style="--sw1:#e8e8f0;--sw2:#b8b8c8;--sw3:#9090a8;"></button>
+          </div>
+        </div>
+
+        <div class="fx-block">
+          <span class="fx-label">Visual Style</span>
+          <div class="presets" id="vizModes">
+            <button data-viz="haze" class="active">Haze</button>
+            <button data-viz="bars">Bars</button>
+            <button data-viz="wave">Wave</button>
+            <button data-viz="radial">Radial</button>
+          </div>
+        </div>
+
+        <div class="fx-block">
+          <span class="fx-label">Background</span>
+          <div class="presets" id="bgFxModes">
+            <button data-bgfx="stars" class="active">Stars</button>
+            <button data-bgfx="orbs">Orbs</button>
+            <button data-bgfx="off">Off</button>
+          </div>
+          <p class="fx-note">drifts &amp; pulses with the bass</p>
         </div>
       </div>
+    </div>
 
-      <div class="fx-block">
-        <span class="fx-label">Echo</span>
-        <div class="fx-row"><label>Mix</label><input type="range" id="echoMix" min="0" max="100" value="0"><span class="fx-val" id="echoMixVal">0%</span></div>
-        <div class="fx-row"><label>Time</label><input type="range" id="echoTime" min="50" max="800" value="300"><span class="fx-val" id="echoTimeVal">300ms</span></div>
-        <div class="fx-row"><label>Feedback</label><input type="range" id="echoFeedback" min="0" max="80" value="30"><span class="fx-val" id="echoFeedbackVal">30%</span></div>
-      </div>
-
-      <div class="fx-block">
-        <span class="fx-label">Reverb</span>
-        <div class="fx-row"><label>Mix</label><input type="range" id="reverbMix" min="0" max="100" value="0"><span class="fx-val" id="reverbMixVal">0%</span></div>
-        <div class="fx-row"><label>Size</label><select id="reverbSize"><option value="short">Short</option><option value="medium" selected>Medium</option><option value="long">Long</option></select></div>
-      </div>
-
-      <div class="fx-block">
-        <span class="fx-label">Preamp</span>
-        <div class="fx-row"><label>Gain</label><input type="range" id="preamp" min="-12" max="12" step="0.5" value="0"><span class="fx-val" id="preampVal">0dB</span></div>
-      </div>
-
-      <div class="fx-block">
-        <span class="fx-label">Crossfade</span>
-        <div class="fx-row"><label>Enable</label>
-          <label class="switch"><input type="checkbox" id="crossfadeToggle"><span class="switch-track"></span></label>
+    <div class="fx-tab-content" data-tab-content="timer">
+      <div class="fx-grid">
+        <div class="fx-block">
+          <span class="fx-label">Sleep Timer</span>
+          <div class="sleep-options" id="sleepOptions">
+            <button data-mins="15">15m</button>
+            <button data-mins="30">30m</button>
+            <button data-mins="45">45m</button>
+            <button data-mins="60">60m</button>
+            <button data-mins="0" class="sleep-off active">Off</button>
+          </div>
+          <p class="fx-note" id="sleepStatus">no timer set</p>
         </div>
-        <div class="fx-row"><label>Length</label><input type="range" id="crossfadeLen" min="1" max="10" step="0.5" value="4"><span class="fx-val" id="crossfadeLenVal">4.0s</span></div>
-        <p class="fx-note">audio tracks only, not video</p>
-      </div>
-
-      <div class="fx-block">
-        <span class="fx-label">Color Theme</span>
-        <div class="theme-swatches" id="themeSwatches">
-          <button data-theme="dreampop" class="active" title="Dream Pop" style="--sw1:#b6a4ff;--sw2:#ffabd8;--sw3:#8ff0e0;"></button>
-          <button data-theme="midnight" title="Midnight Neon" style="--sw1:#6ee7ff;--sw2:#a78bfa;--sw3:#f472b6;"></button>
-          <button data-theme="sakura" title="Sakura" style="--sw1:#ffb7c5;--sw2:#ffd9a0;--sw3:#c9a7ff;"></button>
-          <button data-theme="solar" title="Solar Flare" style="--sw1:#ffb454;--sw2:#ff6b6b;--sw3:#ffe27a;"></button>
-          <button data-theme="mono" title="Mono" style="--sw1:#e8e8f0;--sw2:#b8b8c8;--sw3:#9090a8;"></button>
-        </div>
-      </div>
-
-      <div class="fx-block">
-        <span class="fx-label">Visual Style</span>
-        <div class="presets" id="vizModes">
-          <button data-viz="haze" class="active">Haze</button>
-          <button data-viz="bars">Bars</button>
-          <button data-viz="wave">Wave</button>
-          <button data-viz="radial">Radial</button>
-        </div>
-      </div>
-
-      <div class="fx-block">
-        <span class="fx-label">Background</span>
-        <div class="presets" id="bgFxModes">
-          <button data-bgfx="stars" class="active">Stars</button>
-          <button data-bgfx="orbs">Orbs</button>
-          <button data-bgfx="off">Off</button>
-        </div>
-        <p class="fx-note">drifts &amp; pulses with the bass</p>
-      </div>
-
-      <div class="fx-block">
-        <span class="fx-label">Stereo Width</span>
-        <div class="fx-row"><label>Width</label><input type="range" id="stereoWidth" min="0" max="200" value="100"><span class="fx-val" id="stereoWidthVal">100%</span></div>
-      </div>
-
-      <div class="fx-block">
-        <span class="fx-label">Sleep Timer</span>
-        <div class="sleep-options" id="sleepOptions">
-          <button data-mins="15">15m</button>
-          <button data-mins="30">30m</button>
-          <button data-mins="45">45m</button>
-          <button data-mins="60">60m</button>
-          <button data-mins="0" class="sleep-off active">Off</button>
-        </div>
-        <p class="fx-note" id="sleepStatus">no timer set</p>
-      </div>
-
-      <div class="fx-block">
-        <span class="fx-label">Speed</span>
-        <div class="fx-row"><label>Rate</label><input type="range" id="playRate" min="50" max="150" value="100"><span class="fx-val" id="playRateVal">1.00x</span></div>
-        <p class="fx-note">changes pitch too</p>
-        <button id="fxReset" class="reset-btn">Reset all</button>
       </div>
     </div>
   </section>
@@ -1024,6 +1093,10 @@
     if(currentIndex === -1 && playlist.length){
       loadTrack(0);
     }
+    if(files.length){
+      const banner = document.getElementById('onboardBanner');
+      if(banner) banner.style.display = 'none';
+    }
     return files.length;
   }
 
@@ -1273,6 +1346,7 @@
 
   function setPlayingUI(playing){
     playIcon.innerHTML = playing ? ICON_PAUSE : ICON_PLAY;
+    document.body.classList.toggle('is-playing', playing);
   }
 
   function togglePlay(){
@@ -1386,6 +1460,20 @@
   fxToggle.addEventListener('click', () => {
     fxPanel.classList.toggle('open');
     fxToggle.classList.toggle('active');
+  });
+
+  document.getElementById('fxTabs').addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if(!btn) return;
+    const tab = btn.dataset.tab;
+    Array.from(document.querySelectorAll('#fxTabs button')).forEach(b => b.classList.toggle('active', b === btn));
+    Array.from(document.querySelectorAll('.fx-tab-content')).forEach(c => c.classList.toggle('active', c.dataset.tabContent === tab));
+  });
+
+  // ---------- onboarding banner ----------
+  const onboardBanner = document.getElementById('onboardBanner');
+  document.getElementById('onboardDismiss').addEventListener('click', () => {
+    onboardBanner.style.display = 'none';
   });
 
   const eqSliders = Array.from(document.querySelectorAll('.eqSlider'));
@@ -1553,23 +1641,25 @@
     if(bgFxMode === 'off' || reduceMotion){ return; }
     const isStars = bgFxMode === 'stars';
     const bass = liveBass, treble = liveTreble;
+    const idleDamp = liveIdle ? 0.55 : 1;   // dimmer, lonelier sky at rest
+    const idleSlow = liveIdle ? 0.5 : 1;    // slower drift at rest
 
     bgItems.forEach(p => {
-      p.y += p.speed * (1 + bass*2.2);
-      p.x += p.drift;
+      p.y += p.speed * idleSlow * (1 + bass*2.2);
+      p.x += p.drift * idleSlow;
       if(p.y - p.r > h){ p.y = -p.r; p.x = Math.random()*w; }
       if(p.x < -40) p.x = w+40; if(p.x > w+40) p.x = -40;
 
       const color = p.hueMix < 0.33 ? themeRGB.c1 : p.hueMix < 0.66 ? themeRGB.c2 : themeRGB.c3;
       if(isStars){
-        const twinkle = 0.35 + 0.4*Math.sin(performance.now()/500 + p.phase) + treble*0.3;
+        const twinkle = (0.35 + 0.4*Math.sin(performance.now()/500 + p.phase) + treble*0.3) * idleDamp;
         bgCtx.beginPath();
-        bgCtx.fillStyle = `rgba(${color},${Math.max(0.1,Math.min(0.9,twinkle))})`;
+        bgCtx.fillStyle = `rgba(${color},${Math.max(0.05,Math.min(0.9,twinkle))})`;
         bgCtx.arc(p.x, p.y, p.r*(1+bass*0.8), 0, Math.PI*2);
         bgCtx.fill();
       } else {
         const grad = bgCtx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*(1+bass*0.5));
-        grad.addColorStop(0, `rgba(${color},${0.14+bass*0.12})`);
+        grad.addColorStop(0, `rgba(${color},${(0.14+bass*0.12)*idleDamp})`);
         grad.addColorStop(1, 'rgba(0,0,0,0)');
         bgCtx.fillStyle = grad;
         bgCtx.beginPath();
@@ -1810,7 +1900,7 @@
   let timeData = null;
   let radialRotation = 0;
   let vizMode = 'haze'; // 'haze' | 'bars' | 'wave' | 'radial'
-  let liveBass = 0, liveMid = 0, liveTreble = 0;
+  let liveBass = 0, liveMid = 0, liveTreble = 0, liveIdle = true;
 
   function resizeCanvas(){
     const rect = canvas.parentElement.getBoundingClientRect();
@@ -1890,12 +1980,25 @@
     }
   }
 
-  function renderBarsMode(w,h){
-    if(!analyser || !isAudioDeck(activeEl)) return;
+  function renderBarsMode(w,h,idle,bass,mid,treble){
     const bars = 56;
-    const step = Math.floor(freqData.length/bars);
     const gap = 3*devicePixelRatio;
     const slotW = w/bars;
+    if(idle || !analyser || !isAudioDeck(activeEl)){
+      // resting state: a few bars breathing gently in place of raw silence
+      for(let i=0;i<bars;i++){
+        const phase = i*0.35;
+        const v = ((Math.sin(performance.now()/2200 + phase) + 1) / 2) * 0.12;
+        const bh = Math.max(3, v*h*0.5);
+        const bx = i*slotW + gap/2;
+        const bw = slotW - gap;
+        ctx.fillStyle = `rgba(${bandColor(i/bars)},0.25)`;
+        if(ctx.roundRect){ ctx.beginPath(); ctx.roundRect(bx, h-bh, bw, bh, 4); ctx.fill(); }
+        else ctx.fillRect(bx, h-bh, bw, bh);
+      }
+      return;
+    }
+    const step = Math.floor(freqData.length/bars);
     for(let i=0;i<bars;i++){
       const v = freqData[i*step]/255;
       const bh = Math.max(4, v*h*0.82);
@@ -1911,11 +2014,18 @@
     }
   }
 
-  function renderWaveMode(w,h){
-    if(!analyser || !isAudioDeck(activeEl) || !timeData){
-      ctx.strokeStyle = `rgba(${themeRGB.c1},0.35)`;
+  function renderWaveMode(w,h,idle){
+    if(idle || !analyser || !isAudioDeck(activeEl) || !timeData){
+      const breathe = (Math.sin(performance.now()/2200) + 1) / 2;
+      ctx.strokeStyle = `rgba(${themeRGB.c1},${0.2 + breathe*0.2})`;
       ctx.lineWidth = 2*devicePixelRatio;
-      ctx.beginPath(); ctx.moveTo(0,h/2); ctx.lineTo(w,h/2); ctx.stroke();
+      ctx.beginPath();
+      const amp = h*0.04*breathe;
+      for(let x=0;x<=w;x+=w/60){
+        const y = h/2 + Math.sin(x/60 + performance.now()/1400)*amp;
+        if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
       return;
     }
     analyser.getByteTimeDomainData(timeData);
@@ -1935,15 +2045,17 @@
     ctx.shadowBlur = 0;
   }
 
-  function renderRadialMode(w,h,bass){
+  function renderRadialMode(w,h,bass,idle){
     const cx=w/2, cy=h/2;
     const baseRadius = Math.min(w,h)*0.14;
-    if(!analyser || !isAudioDeck(activeEl)){
-      const grad = ctx.createRadialGradient(cx,cy,0,cx,cy,baseRadius*1.4);
-      grad.addColorStop(0, `rgba(${themeRGB.c1},0.25)`);
+    if(idle || !analyser || !isAudioDeck(activeEl)){
+      radialRotation += 0.0008;
+      const pulse = baseRadius*(1.3 + bass*1.2);
+      const grad = ctx.createRadialGradient(cx,cy,0,cx,cy,pulse);
+      grad.addColorStop(0, `rgba(${themeRGB.c1},${0.15 + bass*0.6})`);
       grad.addColorStop(1, 'rgba(15,13,26,0)');
       ctx.fillStyle = grad;
-      ctx.beginPath(); ctx.arc(cx,cy,baseRadius*1.4,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx,cy,pulse,0,Math.PI*2); ctx.fill();
       return;
     }
     const bars = 48;
@@ -1969,8 +2081,9 @@
   function draw(){
     requestAnimationFrame(draw);
     let bass=0, mid=0, treble=0;
+    const idle = currentIndex === -1 || !activeEl || activeEl.paused;
 
-    if(analyser && isAudioDeck(activeEl)){
+    if(!idle && analyser && isAudioDeck(activeEl)){
       analyser.getByteFrequencyData(freqData);
       const n = freqData.length;
       const b1 = Math.floor(n*0.1), b2 = Math.floor(n*0.5);
@@ -1979,15 +2092,21 @@
       for(let i=b2;i<n;i++) treble += freqData[i];
       bass = bass/b1/255; mid = mid/(b2-b1)/255; treble = treble/(n-b2)/255;
     }
+    if(idle){
+      // resting state: a slow, quiet breathing pulse instead of going flat — alive, just calmer
+      const breathe = (Math.sin(performance.now()/2200) + 1) / 2;
+      bass = breathe * 0.16; mid = breathe * 0.09; treble = breathe * 0.05;
+    }
     liveBass = bass; liveMid = mid; liveTreble = treble;
+    liveIdle = idle;
 
     if(canvas.style.display === 'none') return;
     const w = canvas.width, h = canvas.height;
     ctx.clearRect(0,0,w,h);
 
-    if(vizMode === 'bars') renderBarsMode(w,h);
-    else if(vizMode === 'wave') renderWaveMode(w,h);
-    else if(vizMode === 'radial') renderRadialMode(w,h,bass);
+    if(vizMode === 'bars') renderBarsMode(w,h,idle,bass,mid,treble);
+    else if(vizMode === 'wave') renderWaveMode(w,h,idle);
+    else if(vizMode === 'radial') renderRadialMode(w,h,bass,idle);
     else renderHazeMode(w,h,bass,mid,treble);
 
     // easter egg: supernova burst particles (Konami code) — layered on top of any mode
