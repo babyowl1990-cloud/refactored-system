@@ -480,6 +480,21 @@
     .panel{ padding:16px; }
     .controls{ gap:14px; }
   }
+
+  /* ---- v2: search, favorites, fullscreen lyrics ---- */
+  .lib-tools{display:flex;gap:8px;margin:0 0 10px}
+  #libSearch{flex:1;min-width:0;background:rgba(255,255,255,.05);border:1px solid var(--panel-border);border-radius:10px;color:var(--text);padding:8px 12px;font:inherit;font-size:.85rem;outline:none}
+  #libSearch:focus{border-color:var(--lav)}
+  #favOnly{background:rgba(255,255,255,.05);border:1px solid var(--panel-border);border-radius:10px;color:var(--muted);padding:0 12px;cursor:pointer}
+  #favOnly.active{color:var(--pink);border-color:var(--pink)}
+  #playlist li .fav{background:none;border:none;color:var(--muted);cursor:pointer;opacity:.5;font-size:.95rem;padding:0 4px}
+  #playlist li .fav.on{color:var(--pink);opacity:1}
+  #flyr{position:fixed;inset:0;z-index:300;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6vh 8vw;background:radial-gradient(900px 600px at 50% 40%,rgba(var(--lav-rgb),.22),transparent 70%),rgba(10,8,20,.94);backdrop-filter:blur(24px);cursor:pointer}
+  #flyr.open{display:flex}
+  #flyr .ft{position:absolute;top:28px;left:0;right:0;font-family:'Fraunces',serif;color:var(--muted)}
+  #flyr .l{font-family:'Fraunces',serif;font-size:clamp(1.1rem,2.4vw,1.6rem);color:var(--muted);opacity:.45;margin:10px 0;min-height:1.4em;transition:all .35s}
+  #flyr .l.c{font-size:clamp(1.8rem,5vw,3.4rem);color:var(--text);opacity:1;text-shadow:0 0 40px rgba(var(--lav-rgb),.6);margin:22px 0}
+  #flyr .hint{position:absolute;bottom:22px;color:var(--muted);font-size:.75rem}
 </style>
 </head>
 <body>
@@ -548,6 +563,7 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="12" y2="17"></line></svg>
           Lyrics
         </button>
+        <button id="flyrBtn" class="studio-btn" title="Fullscreen lyrics">⤢ Lyrics</button>
         <button id="fxToggle" class="studio-btn" title="Open the Studio panel">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
           Studio
@@ -574,6 +590,7 @@
         drop .mp3 / .mp4 / .lrc files here, or click to browse
       </div>
 
+      <div class="lib-tools"><input id="libSearch" type="search" placeholder="search library…"><button id="favOnly" title="Favorites only">♥</button></div>
       <ul id="playlist"></ul>
       <p class="empty-hint" id="emptyHint">your playlist is empty</p>
     </section>
@@ -723,6 +740,7 @@
 
 <audio id="audioEl"></audio>
 <audio id="audioEl2"></audio>
+<div id="flyr"><div class="ft" id="flyrT"></div><div class="l" id="fl0"></div><div class="l c" id="fl1"></div><div class="l" id="fl2"></div><div class="l" id="fl3"></div><div class="hint">click or Esc to close</div></div>
 <div id="theaterBackdrop"></div>
 <div class="theater-controls">
   <button id="theaterFullscreenBtn" title="Fullscreen">
@@ -2130,6 +2148,144 @@
       ctx.fillRect(0,0,w,h);
     }
   }
+
+
+  // ================= v2: persistence, library tools, Media Session, fullscreen lyrics =================
+  const LS = {
+    get(k,d){ try{ const v = localStorage.getItem('haze.'+k); return v===null? d : JSON.parse(v); }catch(e){ return d; } },
+    set(k,v){ try{ localStorage.setItem('haze.'+k, JSON.stringify(v)); }catch(e){} }
+  };
+  let db = null;
+  const dbReady = new Promise(res => {
+    try{
+      const r = indexedDB.open('haze-library', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('files', { keyPath:'key' });
+      r.onsuccess = () => { db = r.result; res(db); };
+      r.onerror = () => res(null);
+    }catch(e){ res(null); }
+  });
+  const store = mode => db.transaction('files', mode).objectStore('files');
+
+  const addFilesOrig = addFiles;
+  addFiles = function(list){
+    const arr = Array.from(list);
+    dbReady.then(d => {
+      if(!d) return;
+      arr.forEach((f,i) => {
+        const key = f.name + '|' + f.size;
+        const g = store('readonly').get(key);
+        g.onsuccess = () => { if(!g.result) store('readwrite').put({ key, seq: Date.now()+i, name:f.name, type:f.type, blob:f }); };
+      });
+    });
+    return addFilesOrig(arr);
+  };
+  const removeTrackOrig = removeTrack;
+  removeTrack = function(i){
+    const t = playlist[i];
+    if(t && db){
+      store('readwrite').delete(t.origKey);
+      store('readwrite').delete(t.origBasename + '.lrc|' + (t.lrcSize||0));
+    }
+    removeTrackOrig(i);
+  };
+  clearBtn.addEventListener('click', () => { if(db) store('readwrite').clear(); LS.set('last', -1); });
+
+  const loadTrackOrig = loadTrack;
+  loadTrack = function(i, autoplay){
+    loadTrackOrig(i, autoplay);
+    if(playlist[currentIndex]){ LS.set('lastKey', playlist[currentIndex].origKey); updateMediaSession(); }
+  };
+  volume.addEventListener('input', () => LS.set('vol', volume.value));
+  const savedVol = LS.get('vol', null);
+  if(savedVol !== null){ volume.value = savedVol; volume.dispatchEvent(new Event('input')); }
+
+  dbReady.then(d => {
+    if(!d) return;
+    const all = store('readonly').getAll();
+    all.onsuccess = () => {
+      const rows = all.result.sort((a,b) => a.seq - b.seq);
+      if(!rows.length) return;
+      addFilesOrig(rows.map(r => new File([r.blob], r.name, { type:r.type })));
+      const k = LS.get('lastKey', null);
+      const idx = playlist.findIndex(t => t.origKey === k);
+      if(idx > 0) loadTrackOrig(idx, false);
+      showToast(`restored ${playlist.length} track${playlist.length===1?'':'s'}`);
+    };
+  });
+
+  // ---- search + favorites ----
+  const libSearch = document.getElementById('libSearch');
+  const favOnlyBtn = document.getElementById('favOnly');
+  let favs = new Set(LS.get('favs', []));
+  let favFilter = false;
+  const renderPlaylistOrig = renderPlaylist;
+  renderPlaylist = function(){
+    renderPlaylistOrig();
+    const q = libSearch.value.trim().toLowerCase();
+    playlistEl.querySelectorAll('li').forEach((li, i) => {
+      const t = playlist[i]; if(!t) return;
+      const b = document.createElement('button');
+      b.className = 'fav' + (favs.has(t.origKey) ? ' on' : '');
+      b.textContent = '♥'; b.title = 'Favorite';
+      b.addEventListener('click', e => {
+        e.stopPropagation();
+        favs.has(t.origKey) ? favs.delete(t.origKey) : favs.add(t.origKey);
+        LS.set('favs', [...favs]); renderPlaylist();
+      });
+      li.insertBefore(b, li.querySelector('.remove'));
+      const hit = (!q || (t.name + ' ' + (t.artist||'')).toLowerCase().includes(q)) && (!favFilter || favs.has(t.origKey));
+      li.style.display = hit ? '' : 'none';
+    });
+  };
+  libSearch.addEventListener('input', renderPlaylist);
+  favOnlyBtn.addEventListener('click', () => { favFilter = !favFilter; favOnlyBtn.classList.toggle('active', favFilter); renderPlaylist(); });
+
+  // ---- Media Session (media keys, lock screen, OS overlay) ----
+  function updateMediaSession(){
+    if(!('mediaSession' in navigator)) return;
+    const t = playlist[currentIndex]; if(!t) return;
+    navigator.mediaSession.metadata = new MediaMetadata({ title: t.name, artist: t.artist || '', album: 'Haze' });
+  }
+  if('mediaSession' in navigator){
+    const ms = navigator.mediaSession;
+    ms.setActionHandler('play', () => { if(activeEl.paused) playBtn.click(); });
+    ms.setActionHandler('pause', () => { if(!activeEl.paused) playBtn.click(); });
+    ms.setActionHandler('previoustrack', () => prevBtn.click());
+    ms.setActionHandler('nexttrack', () => nextBtn.click());
+    ms.setActionHandler('seekto', e => { if(e.seekTime != null) activeEl.currentTime = e.seekTime; });
+    setInterval(() => {
+      try{
+        ms.playbackState = activeEl && !activeEl.paused ? 'playing' : 'paused';
+        if(activeEl && isFinite(activeEl.duration)) ms.setPositionState({ duration: activeEl.duration, position: Math.min(activeEl.currentTime, activeEl.duration), playbackRate: activeEl.playbackRate || 1 });
+      }catch(e){}
+    }, 1000);
+  }
+
+  // ---- fullscreen lyrics ----
+  const flyr = document.getElementById('flyr');
+  const fl = [0,1,2,3].map(n => document.getElementById('fl'+n));
+  const flyrT = document.getElementById('flyrT');
+  let flyrOpen = false;
+  function flyrTick(){
+    if(!flyrOpen) return;
+    const t = playlist[currentIndex];
+    flyrT.textContent = t ? `${t.name}${t.artist ? ' — ' + t.artist : ''}` : '';
+    let L = ['','','',''];
+    if(t && t.lyrics && t.lyrics.type === 'synced'){
+      const lines = t.lyrics.lines; let idx = -1;
+      for(let i=0;i<lines.length;i++){ if(lines[i].time <= activeEl.currentTime) idx = i; else break; }
+      const g = j => (lines[j] ? lines[j].text : '');
+      L = [g(idx-1), idx >= 0 ? g(idx) || '♪' : '♪', g(idx+1), g(idx+2)];
+    } else if(t && t.lyrics){
+      L = ['', 'lyrics are unsynced — add a matching .lrc for live lines', '', ''];
+    } else L = ['', 'no lyrics for this track', '', ''];
+    fl.forEach((el,i) => { if(el.textContent !== L[i]) el.textContent = L[i]; });
+    requestAnimationFrame(flyrTick);
+  }
+  function setFlyr(on){ flyrOpen = on; flyr.classList.toggle('open', on); if(on) flyrTick(); }
+  document.getElementById('flyrBtn').addEventListener('click', () => setFlyr(true));
+  flyr.addEventListener('click', () => setFlyr(false));
+  document.addEventListener('keydown', e => { if(e.key === 'Escape' && flyrOpen) setFlyr(false); });
 
   resizeCanvas();
   requestAnimationFrame(draw);
