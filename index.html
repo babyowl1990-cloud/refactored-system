@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Haze — a personal player</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0f0d1a">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,450;9..144,600&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
@@ -2560,6 +2565,68 @@
     });
   };
   renderPlaylist();
+
+  // ================= v5: queue follows the view, shortcuts, PWA (install, offline, open-with) =================
+  let viewPool = [];
+  const renderPlaylistV5 = renderPlaylist;
+  renderPlaylist = function(){
+    renderPlaylistV5();
+    viewPool = [...playlistEl.querySelectorAll('li:not(.grp)')].map((li,i) => ({ i, o: +li.style.order || 0, show: li.style.display !== 'none' }))
+      .filter(x => x.show).sort((a,b) => a.o - b.o).map(x => x.i);
+  };
+  const inView = () => viewPool.length > 0 && viewPool.length < playlist.length;
+  const resolveNextV5 = resolveNextIndex;
+  resolveNextIndex = function(){
+    if(!inView()) return resolveNextV5();
+    if(shuffleOn){ const others = viewPool.filter(i => i !== currentIndex); return others.length ? others[Math.floor(Math.random()*others.length)] : (repeatMode ? currentIndex : null); }
+    const pos = viewPool.indexOf(currentIndex);
+    if(pos === -1) return viewPool[0];
+    if(pos < viewPool.length - 1) return viewPool[pos + 1];
+    return repeatMode === 1 ? viewPool[0] : null;
+  };
+  const prevTrackV5 = prevTrack;
+  prevTrack = function(){
+    if(!inView()) return prevTrackV5();
+    if(activeEl.currentTime > 3){ activeEl.currentTime = 0; return; }
+    const pos = viewPool.indexOf(currentIndex);
+    loadTrack(viewPool[pos <= 0 ? viewPool.length - 1 : pos - 1]);
+  };
+  prevBtn.addEventListener('click', e => { e.stopImmediatePropagation(); prevTrack(); }, true);
+
+  document.addEventListener('keydown', e => {
+    const tg = e.target.tagName;
+    if(tg === 'INPUT' || tg === 'SELECT' || tg === 'TEXTAREA' || e.ctrlKey || e.metaKey || e.altKey) return;
+    const vol = d => { volume.value = Math.max(0, Math.min(1, +volume.value + d)); volume.dispatchEvent(new Event('input')); };
+    if(e.code === 'ArrowUp'){ e.preventDefault(); vol(.05); }
+    else if(e.code === 'ArrowDown'){ e.preventDefault(); vol(-.05); }
+    else if(e.code === 'KeyM'){ activeEl.muted = !activeEl.muted; showToast(activeEl.muted ? 'muted' : 'unmuted'); }
+    else if(e.code === 'KeyL'){ setFlyr(!flyrOpen); }
+    else if(e.code === 'KeyF'){ const t = playlist[currentIndex]; if(t){ favs.has(t.origKey) ? favs.delete(t.origKey) : favs.add(t.origKey); LS.set('favs',[...favs]); renderPlaylist(); showToast(favs.has(t.origKey) ? '♥ favorited' : 'unfavorited'); } }
+    else if(e.key === '/'){ e.preventDefault(); libSearch.focus(); }
+  });
+
+  // ---- PWA ----
+  if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+  let installEvt = null;
+  const inst = document.createElement('button');
+  inst.textContent = '⬇ Install Haze';
+  inst.style.cssText = 'position:fixed;right:18px;bottom:18px;z-index:250;display:none;padding:10px 16px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:linear-gradient(135deg,#b6a4ff,#ffabd8);color:#161228;font:600 .85rem "Space Grotesk",sans-serif;cursor:pointer;box-shadow:0 8px 30px rgba(0,0,0,.4)';
+  document.body.appendChild(inst);
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; inst.style.display = 'block'; });
+  inst.addEventListener('click', async () => { if(!installEvt) return; installEvt.prompt(); await installEvt.userChoice; installEvt = null; inst.style.display = 'none'; });
+  window.addEventListener('appinstalled', () => { inst.style.display = 'none'; showToast('Haze installed'); });
+  window.addEventListener('offline', () => showToast('offline — your library still plays'));
+  window.addEventListener('online', () => showToast('back online'));
+  if('launchQueue' in window){
+    launchQueue.setConsumer(async lp => {
+      if(!lp.files || !lp.files.length) return;
+      const files = await Promise.all(lp.files.map(h => h.getFile()));
+      const before = playlist.length; addFiles(files);
+      if(playlist.length > before) setTimeout(() => loadTrack(before, true), 300);
+    });
+  }
   resizeCanvas();
   requestAnimationFrame(draw);
 })();
