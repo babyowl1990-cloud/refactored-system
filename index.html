@@ -497,7 +497,7 @@
   #flyr .hint{position:absolute;bottom:22px;color:var(--muted);font-size:.75rem}
 
   /* ---- v3: playlists, cover art, lyric animations ---- */
-  #plSel{background:rgba(255,255,255,.05);border:1px solid var(--panel-border);border-radius:10px;color:var(--text);padding:6px 8px;font:inherit;font-size:.8rem;max-width:130px}
+  #grpSel,#plSel{background:rgba(255,255,255,.05);border:1px solid var(--panel-border);border-radius:10px;color:var(--text);padding:6px 8px;font:inherit;font-size:.8rem;max-width:130px}
   #plSel option{background:#161228}
   .lib-tools button.mini{background:rgba(255,255,255,.05);border:1px solid var(--panel-border);border-radius:10px;color:var(--muted);padding:0 10px;cursor:pointer}
   #playlist li .thumb{width:34px;height:34px;border-radius:7px;object-fit:cover;flex-shrink:0}
@@ -514,6 +514,12 @@
   #flyr .ft{position:relative;animation:ftFloat 6s ease-in-out infinite alternate}
   @keyframes ftFloat{to{transform:translateY(6px);opacity:.75}}
   @media (prefers-reduced-motion:reduce){#flyr .l.in,#flyr .ft,#cover{animation:none}}
+
+  /* ---- v4: grouping + drag reorder ---- */
+  #playlist{display:flex;flex-direction:column}
+  #playlist li.grp{cursor:default;pointer-events:none;color:var(--lav);font-family:'Fraunces',serif;font-size:.85rem;padding:12px 8px 4px;letter-spacing:.04em;background:none}
+  #playlist li.dragging{opacity:.35}
+  #playlist li.over{box-shadow:inset 0 2px 0 var(--lav)}
 </style>
 </head>
 <body>
@@ -582,7 +588,6 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="12" y2="17"></line></svg>
           Lyrics
         </button>
-        <button id="flyrBtn" class="studio-btn" title="Fullscreen lyrics">⤢ Lyrics</button>
         <button id="fxToggle" class="studio-btn" title="Open the Studio panel">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
           Studio
@@ -609,7 +614,7 @@
         drop .mp3 / .mp4 / .lrc files here, or click to browse
       </div>
 
-      <div class="lib-tools"><select id="plSel" title="Playlist"><option value="">All tracks</option></select><button class="mini" id="plNew" title="New playlist">＋</button><button class="mini" id="plDel" title="Delete this playlist">🗑</button><input id="libSearch" type="search" placeholder="search library…"><button id="favOnly" title="Favorites only">♥</button></div>
+      <div class="lib-tools"><select id="plSel" title="Playlist"><option value="">All tracks</option></select><button class="mini" id="plNew" title="New playlist">＋</button><select id="grpSel" title="Group by"><option value="">No grouping</option><option value="artist">By artist</option><option value="album">By album</option></select><button class="mini" id="plDel" title="Delete this playlist">🗑</button><input id="libSearch" type="search" placeholder="search library…"><button id="favOnly" title="Favorites only">♥</button></div>
       <ul id="playlist"></ul>
       <p class="empty-hint" id="emptyHint">your playlist is empty</p>
     </section>
@@ -618,7 +623,7 @@
   <section class="panel lyrics-panel" id="lyricsPanel">
     <div class="lyrics-header">
       <h3>Lyrics</h3>
-      <div class="lyrics-header-right">
+      <div class="lyrics-header-right"><button id="flyrBtn" class="studio-btn" title="Fullscreen lyrics">⤢ Fullscreen</button>
         <span class="auto-scroll-label">auto-scroll</span>
         <label class="switch"><input type="checkbox" id="lyricsAutoScroll" checked><span class="switch-track"></span></label>
         <span class="fx-note" id="lyricsSource"></span>
@@ -2340,7 +2345,7 @@
     coverEl.style.display = u ? 'block' : 'none'; flyrArt.style.display = u ? 'block' : 'none';
     if(u){ coverEl.src = u; flyrArt.src = u; }
     flyrBg.style.backgroundImage = u ? `url(${u})` : 'none';
-    if('mediaSession' in navigator && t) navigator.mediaSession.metadata = new MediaMetadata({ title:t.name, artist:t.artist||'', album:'Haze', artwork: u ? [{ src:u, sizes:'512x512' }] : [] });
+    if('mediaSession' in navigator && t) navigator.mediaSession.metadata = new MediaMetadata({ title:t.name, artist:t.artist||'', album:(t.album||'Haze'), artwork: u ? [{ src:u, sizes:'512x512' }] : [] });
   }
   function scanCovers(files){
     Array.from(files).filter(f => /\.mp3$/i.test(f.name)).forEach(f => {
@@ -2424,6 +2429,137 @@
       flAnim.forEach((el, i) => { el.classList.remove('in'); void el.offsetWidth; el.style.animationDelay = (i*40) + 'ms'; el.classList.add('in'); });
     }
   };
+
+  // ================= v4: m4a/flac tags, album+artist grouping, drag-to-reorder =================
+  const u32 = (a,o) => ((a[o]<<24)|(a[o+1]<<16)|(a[o+2]<<8)|a[o+3])>>>0;
+  const le32 = (a,o) => (a[o]|(a[o+1]<<8)|(a[o+2]<<16)|(a[o+3]<<24))>>>0;
+  const dec = (b, enc) => { try{
+    if(enc===1||enc===2){ const be = (b[0]===0xFE&&b[1]===0xFF) || enc===2; return new TextDecoder(be?'utf-16be':'utf-16le').decode(b).replace(/\0+$/,''); }
+    return new TextDecoder(enc===3?'utf-8':'windows-1252').decode(b).replace(/\0+$/,'');
+  }catch(e){ return ''; } };
+  const imgUrl = (bytes, mime) => {
+    if(!bytes || bytes.length < 100) return null;
+    mime = mime || (bytes[0]===0x89 ? 'image/png' : 'image/jpeg');
+    return URL.createObjectURL(new Blob([bytes], { type: mime.includes('/') ? mime : 'image/jpeg' }));
+  };
+  async function readTags(file){
+    const n = file.name.toLowerCase();
+    if(n.endsWith('.flac')){
+      const b = new Uint8Array(await file.slice(0, 6000000).arrayBuffer());
+      if(String.fromCharCode(b[0],b[1],b[2],b[3]) !== 'fLaC') return null;
+      const out = {}; let o = 4, last = false;
+      while(!last && o + 4 <= b.length){
+        last = !!(b[o] & 0x80); const type = b[o] & 0x7f, len = (b[o+1]<<16)|(b[o+2]<<8)|b[o+3]; o += 4;
+        if(type === 4){
+          let p = o + 4 + le32(b,o); const cnt = le32(b,p); p += 4;
+          for(let i=0;i<cnt && p < o+len;i++){ const l = le32(b,p); const kv = dec(b.slice(p+4,p+4+l),3); p += 4 + l;
+            const e = kv.indexOf('='), k = kv.slice(0,e).toUpperCase(), v = kv.slice(e+1);
+            if(k==='ALBUM') out.album = v; else if(k==='ARTIST' || k==='ALBUMARTIST'){ out.artist = out.artist || v; } }
+        } else if(type === 6 && !out.cover && o + len <= b.length){
+          let p = o + 4; const ml = u32(b,p); const mime = dec(b.slice(p+4,p+4+ml),0); p += 4 + ml;
+          p += 4 + u32(b,p) + 16; const dl = u32(b,p); out.cover = imgUrl(b.slice(p+4,p+4+dl), mime);
+        }
+        o += len;
+      }
+      return out;
+    }
+    if(/\.(m4a|aac)$/.test(n)){
+      let b = new Uint8Array(await file.slice(0, 3000000).arrayBuffer());
+      const find = a => { for(let i=4;i<a.length-4;i++) if(a[i]===0x69&&a[i+1]===0x6c&&a[i+2]===0x73&&a[i+3]===0x74) return i; return -1; };
+      let i = find(b);
+      if(i < 0 && file.size > 3000000){ b = new Uint8Array(await file.slice(file.size-3000000).arrayBuffer()); i = find(b); }
+      if(i < 0) return null;
+      const out = {}; let o = i + 4; const end = Math.min(b.length, i - 4 + u32(b,i-4));
+      while(o + 24 < end){
+        const sz = u32(b,o); if(sz < 24) break;
+        const name = String.fromCharCode(b[o+4],b[o+5],b[o+6],b[o+7]), pl = b.slice(o+24, o+8+u32(b,o+8));
+        if(name==='\xa9alb') out.album = dec(pl,3); else if(name==='\xa9ART') out.artist = dec(pl,3);
+        else if(name==='covr') out.cover = imgUrl(pl);
+        o += sz;
+      }
+      return out;
+    }
+    // mp3 (ID3v2): cover + album
+    const b = new Uint8Array(await file.slice(0, 2000000).arrayBuffer());
+    if(String.fromCharCode(b[0],b[1],b[2]) !== 'ID3') return null;
+    const ver = b[3], sy = o => (b[o]<<21)|(b[o+1]<<14)|(b[o+2]<<7)|b[o+3];
+    const end = Math.min(b.length, 10 + sy(6)), out = {}; let o = 10;
+    while(o + 10 < end){
+      const id = String.fromCharCode(b[o],b[o+1],b[o+2],b[o+3]), size = ver===4 ? sy(o+4) : u32(b,o+4);
+      if(!size || b[o]===0) break;
+      if(id==='TALB') out.album = dec(b.slice(o+11, o+10+size), b[o+10]);
+      else if(id==='TPE1') out.artist = dec(b.slice(o+11, o+10+size), b[o+10]);
+      else if(id==='APIC'){
+        let p = o + 10; const enc = b[p++]; let m = p; while(b[m] !== 0 && m < end) m++;
+        const mime = String.fromCharCode(...b.slice(p, m)); p = m + 2;
+        if(enc===1||enc===2){ while(p < end && !(b[p]===0 && b[p+1]===0)) p += 2; p += 2; } else { while(p < end && b[p] !== 0) p++; p++; }
+        out.cover = imgUrl(b.slice(p, o + 10 + size), mime);
+      }
+      o += 10 + size;
+    }
+    return out;
+  }
+  let _rt;
+  scanCovers = function(files){
+    Array.from(files).filter(f => /\.(mp3|m4a|aac|flac)$/i.test(f.name)).forEach(f => {
+      readTags(f).then(r => {
+        const t = playlist.find(x => x.origKey === f.name + '|' + f.size);
+        if(!t || !r) return;
+        if(r.cover && !t.cover) t.cover = r.cover;
+        if(r.album) t.album = r.album;
+        if(r.artist && !t.artist) t.artist = r.artist;
+        clearTimeout(_rt); _rt = setTimeout(() => { renderPlaylist(); applyCover(); }, 150);
+      }).catch(() => {});
+    });
+  };
+
+  // ---- grouping + drag-to-reorder ----
+  const grpSel = document.getElementById('grpSel');
+  grpSel.addEventListener('change', renderPlaylist);
+  function persistOrder(){
+    if(!db) return;
+    const st = store('readwrite');
+    playlist.forEach((t,i) => { const g = st.get(t.origKey); g.onsuccess = () => { if(g.result){ g.result.seq = i; st.put(g.result); } }; });
+  }
+  function moveTrack(from, to){
+    if(from === to) return;
+    const cur = playlist[currentIndex], [m] = playlist.splice(from, 1);
+    playlist.splice(to, 0, m);
+    currentIndex = cur ? playlist.indexOf(cur) : -1;
+    if(shuffleOn){ shuffleBtn.click(); shuffleBtn.click(); }
+    persistOrder(); renderPlaylist();
+  }
+  const renderPlaylistV4 = renderPlaylist;
+  renderPlaylist = function(){
+    renderPlaylistV4();
+    const g = grpSel.value, canDrag = !g && !plSel.value && !libSearch.value.trim() && !favFilter;
+    const lis = [...playlistEl.querySelectorAll('li')];
+    lis.forEach((li, i) => {
+      const t = playlist[i]; if(!t) return;
+      li.style.order = i;
+      if(canDrag){
+        li.draggable = true;
+        li.addEventListener('dragstart', e => { li.classList.add('dragging'); e.dataTransfer.setData('text/plain', String(i)); e.dataTransfer.effectAllowed = 'move'; });
+        li.addEventListener('dragend', () => li.classList.remove('dragging'));
+        li.addEventListener('dragover', e => { e.preventDefault(); li.classList.add('over'); });
+        li.addEventListener('dragleave', () => li.classList.remove('over'));
+        li.addEventListener('drop', e => { e.preventDefault(); e.stopPropagation(); li.classList.remove('over'); moveTrack(parseInt(e.dataTransfer.getData('text/plain'),10), i); });
+      }
+    });
+    if(!g) return;
+    const keyOf = t => (g==='artist' ? t.artist : t.album) || (g==='artist' ? 'Unknown artist' : 'Unknown album');
+    const keys = [...new Set(playlist.map(keyOf))].sort((a,b) => a.localeCompare(b));
+    keys.forEach((k, ki) => {
+      let any = false;
+      lis.forEach((li, i) => { const t = playlist[i]; if(t && keyOf(t) === k){ li.style.order = ki*10000 + i + 1; if(li.style.display !== 'none') any = true; } });
+      if(any){
+        const h = document.createElement('li'); h.className = 'grp'; h.style.order = ki*10000;
+        h.textContent = `${k} · ${lis.filter((li,i) => playlist[i] && keyOf(playlist[i]) === k && li.style.display !== 'none').length}`;
+        playlistEl.appendChild(h);
+      }
+    });
+  };
+  renderPlaylist();
   resizeCanvas();
   requestAnimationFrame(draw);
 })();
