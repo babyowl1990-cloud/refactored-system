@@ -538,6 +538,14 @@
   /* ---- v7: note no longer overlaps the pills; install toggle lives in Studio header ---- */
   p.fx-note{margin:8px 0 0}
   .fx-header-right{flex-wrap:wrap;justify-content:flex-end;gap:8px}
+
+  /* ---- v8: stop the playlist column from forcing the layout wider than the window ---- */
+  main{grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr)}
+  @media (max-width:820px){main{grid-template-columns:minmax(0,1fr)}}
+  main > *{min-width:0}
+  .lib-tools{flex-wrap:wrap}
+  #libSearch{flex:1 1 150px}
+  #grpSel,#plSel{flex:1 1 100px;min-width:0;max-width:none}
 </style>
 </head>
 <body>
