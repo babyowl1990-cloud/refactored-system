@@ -1,0 +1,20 @@
+{
+  "name": "Haze — a personal player",
+  "short_name": "Haze",
+  "description": "A private music player for your own files: synced lyrics, EQ, visualizers, playlists.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f0d1a",
+  "theme_color": "#0f0d1a",
+  "categories": ["music", "entertainment"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "file_handlers": [{
+    "action": "./",
+    "accept": { "audio/*": [".mp3", ".m4a", ".flac", ".wav", ".ogg", ".aac"] }
+  }]
+}
